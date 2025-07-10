@@ -5,6 +5,6 @@ PKG-INFO
 __pycache__/
 .vscode/
 *~
-*.log
+# *.log
 build/*
 *.out

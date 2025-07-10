@@ -1,0 +1,215 @@
+Traceback (most recent call last):
+  File "/home/v-yizhaogao/ksmm/scripts/bench.py", line 166, in main
+    ksl_output = ksl(x)
+                 ^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 369, in forward
+    output = self.forward_bs_last(output)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 292, in forward_bs_last
+    output = Kernel.forward(
+             ^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/kernel.py", line 242, in forward
+    raise Exception(
+Exception: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 32, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Calculated dimensions: dim_in=64, dim_out=64
+Input tensor shape: torch.Size([64, 25088])
+Patterns: [(32, 2, 2, 1), (16, 2, 2, 2), (8, 2, 2, 4), (4, 2, 2, 8), (2, 2, 2, 16), (1, 2, 2, 32)]
+Algorithm: kernel
+Device: cuda, dtype: torch.float16
+KSLinear created successfully
+Dense weight: tensor([[-4.7803e-04,  6.3515e-04, -1.3232e-05,  ...,  2.3842e-07,
+          1.0222e-04, -2.2233e-04],
+        [ 7.8022e-05,  8.4305e-03,  2.1458e-06,  ...,  3.1590e-06,
+         -1.6689e-05, -2.9507e-03],
+        [-1.9860e-04,  3.3951e-03, -6.2585e-05,  ...,  1.2517e-06,
+          4.8447e-04, -1.6069e-03],
+        ...,
+        [ 2.4166e-03, -1.9341e-03, -6.7616e-04,  ...,  2.6822e-05,
+          3.6888e-03, -5.5981e-04],
+        [-4.6349e-04,  4.2877e-03, -3.3021e-05,  ..., -5.9485e-05,
+          1.8013e-04,  2.8572e-03],
+        [-2.0313e-03,  3.8929e-03, -1.4472e-04,  ..., -5.4121e-05,
+          7.8964e-04,  2.5978e-03]], device='cuda:0', dtype=torch.float16,
+       grad_fn=<PermuteBackward0>)
+Dense weight shape: torch.Size([64, 64])
+-------Current Python process hasn't compiled yet the kernel for the target dimensions (batch-size=25088, a=32, b=2, c=2, d=1), compiling it now...---------------------
+Error: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 32, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Traceback (most recent call last):
+  File "/home/v-yizhaogao/ksmm/scripts/bench.py", line 166, in main
+    ksl_output = ksl(x)
+                 ^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 369, in forward
+    output = self.forward_bs_last(output)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 292, in forward_bs_last
+    output = Kernel.forward(
+             ^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/kernel.py", line 242, in forward
+    raise Exception(
+Exception: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 64, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Calculated dimensions: dim_in=128, dim_out=128
+Input tensor shape: torch.Size([128, 25088])
+Patterns: [(64, 2, 2, 1), (32, 2, 2, 2), (16, 2, 2, 4), (8, 2, 2, 8), (4, 2, 2, 16), (2, 2, 2, 32), (1, 2, 2, 64)]
+Algorithm: kernel
+Device: cuda, dtype: torch.float16
+KSLinear created successfully
+Dense weight: tensor([[ 6.7997e-04, -7.1347e-05, -8.3447e-06,  ...,  5.6863e-05,
+         -1.5676e-05,  1.2970e-04],
+        [ 1.1425e-03, -5.4598e-05, -1.4067e-05,  ...,  4.3392e-05,
+         -2.6405e-05,  9.9182e-05],
+        [-3.0065e-04, -2.4140e-05, -2.8992e-04,  ...,  1.9193e-05,
+         -5.4359e-04,  6.6161e-06],
+        ...,
+        [ 2.2197e-04,  8.9169e-04, -5.4836e-05,  ...,  3.9279e-05,
+          5.9605e-08, -1.4126e-05],
+        [ 1.9133e-05, -1.9531e-03, -2.7716e-05,  ..., -8.6188e-05,
+          5.9605e-08,  3.7909e-05],
+        [-2.8133e-05,  2.0206e-04,  4.0710e-05,  ...,  8.8811e-06,
+         -5.9605e-08, -3.8743e-06]], device='cuda:0', dtype=torch.float16,
+       grad_fn=<PermuteBackward0>)
+Dense weight shape: torch.Size([128, 128])
+-------Current Python process hasn't compiled yet the kernel for the target dimensions (batch-size=25088, a=64, b=2, c=2, d=1), compiling it now...---------------------
+Error: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 64, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Traceback (most recent call last):
+  File "/home/v-yizhaogao/ksmm/scripts/bench.py", line 166, in main
+    ksl_output = ksl(x)
+                 ^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 369, in forward
+    output = self.forward_bs_last(output)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 292, in forward_bs_last
+    output = Kernel.forward(
+             ^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/kernel.py", line 242, in forward
+    raise Exception(
+Exception: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 128, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Calculated dimensions: dim_in=256, dim_out=256
+Input tensor shape: torch.Size([256, 25088])
+Patterns: [(128, 2, 2, 1), (64, 2, 2, 2), (32, 2, 2, 4), (16, 2, 2, 8), (8, 2, 2, 16), (4, 2, 2, 32), (2, 2, 2, 64), (1, 2, 2, 128)]
+Algorithm: kernel
+Device: cuda, dtype: torch.float16
+KSLinear created successfully
+Dense weight: tensor([[-1.0204e-03, -1.6093e-05, -3.5763e-07,  ...,  2.9802e-06,
+         -1.1981e-05, -1.8156e-04],
+        [ 1.0710e-03, -5.4240e-06,  3.5763e-07,  ...,  1.0133e-06,
+          1.2577e-05, -6.1333e-05],
+        [ 2.1267e-03, -1.7643e-05, -4.1723e-07,  ...,  3.2187e-06,
+         -1.5438e-05, -6.8545e-05],
+        ...,
+        [-7.8917e-05, -3.9279e-05,  2.7120e-05,  ...,  3.5992e-03,
+          6.8665e-05,  2.0087e-04],
+        [-2.2173e-05, -5.8293e-05, -1.1921e-06,  ...,  5.3368e-03,
+         -3.0994e-06,  3.5048e-04],
+        [-1.4484e-05, -1.2159e-05, -8.3447e-07,  ...,  1.1101e-03,
+         -2.0266e-06,  7.2777e-05]], device='cuda:0', dtype=torch.float16,
+       grad_fn=<PermuteBackward0>)
+Dense weight shape: torch.Size([256, 256])
+-------Current Python process hasn't compiled yet the kernel for the target dimensions (batch-size=25088, a=128, b=2, c=2, d=1), compiling it now...---------------------
+Error: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 128, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Traceback (most recent call last):
+  File "/home/v-yizhaogao/ksmm/scripts/bench.py", line 166, in main
+    ksl_output = ksl(x)
+                 ^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 369, in forward
+    output = self.forward_bs_last(output)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 292, in forward_bs_last
+    output = Kernel.forward(
+             ^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/kernel.py", line 242, in forward
+    raise Exception(
+Exception: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 256, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Calculated dimensions: dim_in=512, dim_out=512
+Input tensor shape: torch.Size([512, 25088])
+Patterns: [(256, 2, 2, 1), (128, 2, 2, 2), (64, 2, 2, 4), (32, 2, 2, 8), (16, 2, 2, 16), (8, 2, 2, 32), (4, 2, 2, 64), (2, 2, 2, 128), (1, 2, 2, 256)]
+Algorithm: kernel
+Device: cuda, dtype: torch.float16
+KSLinear created successfully
+Dense weight: tensor([[-3.0160e-05,  5.9605e-07, -1.4305e-06,  ...,  5.1165e-04,
+          2.5749e-05, -1.3113e-06],
+        [-1.1742e-05,  8.3447e-07, -5.3644e-07,  ...,  6.8998e-04,
+          1.0014e-05, -1.7881e-06],
+        [-1.4305e-05, -5.9605e-07, -7.1526e-07,  ..., -5.1260e-04,
+          1.2398e-05,  2.9802e-07],
+        ...,
+        [-4.3797e-04, -1.0133e-06,  2.4438e-06,  ...,  6.1393e-06,
+          7.1645e-05, -3.9935e-05],
+        [ 1.5366e-04,  1.2517e-06, -4.8876e-06,  ..., -7.5698e-06,
+         -1.4269e-04,  1.1522e-04],
+        [ 2.7871e-04,  7.1526e-07, -8.8811e-06,  ..., -4.4703e-06,
+         -2.5940e-04,  6.7949e-05]], device='cuda:0', dtype=torch.float16,
+       grad_fn=<PermuteBackward0>)
+Dense weight shape: torch.Size([512, 512])
+-------Current Python process hasn't compiled yet the kernel for the target dimensions (batch-size=25088, a=256, b=2, c=2, d=1), compiling it now...---------------------
+Error: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 256, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Traceback (most recent call last):
+  File "/home/v-yizhaogao/ksmm/scripts/bench.py", line 166, in main
+    ksl_output = ksl(x)
+                 ^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/miniconda3/envs/ksmm/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 369, in forward
+    output = self.forward_bs_last(output)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/interface.py", line 292, in forward_bs_last
+    output = Kernel.forward(
+             ^^^^^^^^^^^^^^^
+  File "/home/v-yizhaogao/ksmm/src/ksmm_py/layer/kronecker_sparse/kernel.py", line 242, in forward
+    raise Exception(
+Exception: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 512, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Calculated dimensions: dim_in=1024, dim_out=1024
+Input tensor shape: torch.Size([1024, 25088])
+Patterns: [(512, 2, 2, 1), (256, 2, 2, 2), (128, 2, 2, 4), (64, 2, 2, 8), (32, 2, 2, 16), (16, 2, 2, 32), (8, 2, 2, 64), (4, 2, 2, 128), (2, 2, 2, 256), (1, 2, 2, 512)]
+Algorithm: kernel
+Device: cuda, dtype: torch.float16
+KSLinear created successfully
+Dense weight: tensor([[ 0.0000e+00,  1.2994e-05, -5.9605e-07,  ...,  2.6822e-06,
+          4.1723e-07, -7.7486e-07],
+        [ 1.1921e-07,  1.4305e-06, -4.7684e-06,  ...,  2.9802e-07,
+          3.4571e-06, -5.9605e-08],
+        [-0.0000e+00,  4.7684e-06,  1.1325e-06,  ...,  9.5367e-07,
+         -8.3447e-07,  8.3447e-07],
+        ...,
+        [-9.5367e-07, -5.9605e-08,  2.3842e-07,  ..., -4.3511e-06,
+         -1.9073e-06,  4.1127e-06],
+        [-1.0133e-06, -5.9605e-08,  2.9802e-07,  ..., -2.3842e-06,
+         -2.6822e-06, -1.4901e-06],
+        [-2.9802e-07, -1.1921e-07,  5.9605e-08,  ..., -6.9141e-06,
+         -7.1526e-07, -4.2319e-06]], device='cuda:0', dtype=torch.float16,
+       grad_fn=<PermuteBackward0>)
+Dense weight shape: torch.Size([1024, 1024])
+-------Current Python process hasn't compiled yet the kernel for the target dimensions (batch-size=25088, a=512, b=2, c=2, d=1), compiling it now...---------------------
+Error: ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, precision, VSIZE) = (25088, 512, 2, 2, 1, half, 4) in the .best file, nor could we find default compatible ones. Please suggest new hyperparameters in the .best file or modify the code to add a new kernel instance with the desired hyperparameters.
+Butterfly patterns for size 64 n=6: [(32, 2, 2, 1), (16, 2, 2, 2), (8, 2, 2, 4), (4, 2, 2, 8), (2, 2, 2, 16), (1, 2, 2, 32)]
+Butterfly patterns for size 128 n=7: [(64, 2, 2, 1), (32, 2, 2, 2), (16, 2, 2, 4), (8, 2, 2, 8), (4, 2, 2, 16), (2, 2, 2, 32), (1, 2, 2, 64)]
+Butterfly patterns for size 256 n=8: [(128, 2, 2, 1), (64, 2, 2, 2), (32, 2, 2, 4), (16, 2, 2, 8), (8, 2, 2, 16), (4, 2, 2, 32), (2, 2, 2, 64), (1, 2, 2, 128)]
+Butterfly patterns for size 512 n=9: [(256, 2, 2, 1), (128, 2, 2, 2), (64, 2, 2, 4), (32, 2, 2, 8), (16, 2, 2, 16), (8, 2, 2, 32), (4, 2, 2, 64), (2, 2, 2, 128), (1, 2, 2, 256)]
+Butterfly patterns for size 1024 n=10: [(512, 2, 2, 1), (256, 2, 2, 2), (128, 2, 2, 4), (64, 2, 2, 8), (32, 2, 2, 16), (16, 2, 2, 32), (8, 2, 2, 64), (4, 2, 2, 128), (2, 2, 2, 256), (1, 2, 2, 512)]
