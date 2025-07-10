@@ -1,0 +1,28 @@
+{
+  "patterns": [
+    [
+      1,
+      512,
+      512,
+      128
+    ]
+  ],
+  "dim_in": 65536,
+  "dim_out": 65536,
+  "batch_size": 25088,
+  "batch_size_last": true,
+  "dtype": "float16",
+  "algo": "kernel",
+  "warmup_runs": 10,
+  "test_runs": 100,
+  "ksl_time_ms": {
+    "mean": 89.82162797001365,
+    "std": 889.2341169031351
+  },
+  "torch_time_ms": {
+    "mean": 991.4802117300133,
+    "std": 9815.654096127131
+  },
+  "speedup": 11.038323777220029,
+  "theoretical_speedup": 128.0
+}

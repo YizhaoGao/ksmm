@@ -190,6 +190,18 @@ class KSLinear(nn.Module):
         else:
             self.register_parameter("bias", None)
 
+
+    def get_weights_size(self):
+        """
+        Return the size of the weights in bytes.
+        """
+        size = 0
+        for factor, pattern in zip(self.factors, self.patterns):
+            a, b, c, d = pattern
+            size += a * b * c * d
+        return size
+
+
     def forward_bs_first(self, output):
             for i, factor in enumerate(self.factors):
                 if self.algo == "bmm":
