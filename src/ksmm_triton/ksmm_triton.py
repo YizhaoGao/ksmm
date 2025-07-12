@@ -242,7 +242,7 @@ def ks_triton(X, K_bmm, pattern, layout='BSF'):
     
     Args:
         X (torch.Tensor): Input tensor. Shape (B, N) for BSF or (N, B) for BSL.
-        K_bmm (torch.Tensor): Pre-permuted weight tensor of shape (a*d, b, c),
+        K_bmm (torch.Tensor): Pre-permuted weight tensor of shape (a*d, c, b),
                               as used in the paper's BMM baseline.
         pattern (tuple): The (a, b, c, d) Kronecker-sparse pattern.
         layout (str): Memory layout, 'BSF' (batch-size-first) or 'BSL' (batch-size-last).
@@ -262,11 +262,8 @@ def ks_triton(X, K_bmm, pattern, layout='BSF'):
 
     M = a * b * d
     assert N == a * c * d, "Input dimension N does not match pattern"
-    assert K_bmm.shape == (a * d, b, c), "K_bmm shape is incorrect"
+    assert K_bmm.shape == (a * d, c, b), "K_bmm shape is incorrect"
 
-    # The kernel expects K^T relative to the BMM baseline's K.
-    # BMM computes X_perm @ K_bmm.T, so we need K_bmm.T which is (ad, c, b)
-    K_T = K_bmm.transpose(1, 2).contiguous()
 
     # 2. Output Tensor
     # Output is created in BSL layout
@@ -280,12 +277,12 @@ def ks_triton(X, K_bmm, pattern, layout='BSF'):
     
     # Kernel call
     ks_fused_kernel[grid](
-        Y_bsl, X_bsl, K_T,
+        Y_bsl, X_bsl, K_bmm,
         B,
         # Strides for BSL layout
         X_bsl.stride(1), X_bsl.stride(0),
         Y_bsl.stride(1), Y_bsl.stride(0),
-        K_T.stride(0), K_T.stride(1), K_T.stride(2),
+        K_bmm.stride(0), K_bmm.stride(1), K_bmm.stride(2),
         # Tuning parameters (BLOCK_SIZES)
         a, b, c, d,
     )
@@ -309,8 +306,8 @@ if __name__ == "__main__":
                        help='Number of warmup runs')
     parser.add_argument('--test_runs', type=int, default=100,
                        help='Number of test runs for averaging')
-    parser.add_argument('--output_file', type=str, default="output.json",
-                       help='Output JSON file for results')
+    # parser.add_argument('--output_file', type=str, default="output.json",
+    #                    help='Output JSON file for results')
 
     args = parser.parse_args()
 
@@ -338,13 +335,13 @@ if __name__ == "__main__":
         device='cuda'
     )
     dense_weight = ksl.get_dense_product()
-    dense_weight_transposed = dense_weight.T    
+    dense_weight_T = dense_weight.T    
     K_bmm = ksl.factors[0].view(a * d, c, b).transpose(-1, -2).contiguous()  # Shape (a*d, c, b)
     print(f"K_bmm shape: {K_bmm.shape}")
     
 
     X = torch.randn((B, N), device='cuda', dtype=torch.float16)
-    X_T = X.T
+    X_T = X.T.contiguous()  # Transpose to (N, B) for BSL layout
     
 
     print("Running BMM")
@@ -353,11 +350,12 @@ if __name__ == "__main__":
     
 
     print("Running Triton Fused Kernel")
-    Y_triton = ks_triton(X_T, K_bmm, pattern, layout='BSL')
+    K_bmm_T = K_bmm.transpose(-1, -2).contiguous()  # Ensure K_bmm is in (a*d, b, c) format
+    Y_triton = ks_triton(X_T, K_bmm_T, pattern, layout='BSL')
     Y_triton = Y_triton.T  # Transpose back to BSF if needed
 
     print("Running Torch MM")
-    Y_torch = torch_mm_forward(X, dense_weight_transposed)
+    Y_torch = torch_mm_forward(X, dense_weight_T)
 
 
     print("Running KSLinear")
@@ -374,14 +372,14 @@ if __name__ == "__main__":
     print("\nVerifying results...")
     bmm_close = torch.allclose(Y_bmm, Y_torch, rtol=1e-2, atol=1e-2)
     triton_close = torch.allclose(Y_triton, Y_torch, rtol=1e-2, atol=1e-2)
-    # ksl_close = torch.allclose(Y_ksl, Y_torch, rtol=1e-2, atol=1e-2)
+    ksl_close = torch.allclose(Y_ksl, Y_torch, rtol=1e-2, atol=1e-2)
     print(f"BMM close to Torch MM: {bmm_close}", "max diff:", torch.max(torch.abs(Y_bmm - Y_torch)).item())
     print(f"Triton close to Torch MM: {triton_close}", "max diff:", torch.max(torch.abs(Y_triton - Y_torch)).item())
-    # print(f"KSLinear close to Torch MM: {ksl_close}")
+    print(f"KSLinear close to Torch MM: {ksl_close}", "max diff:", torch.max(torch.abs(Y_ksl - Y_torch)).item() if Y_ksl is not None else "N/A")
 
         
     torch_mean, torch_std = benchmark_function(
-        torch_mm_forward, X, dense_weight_transposed,
+        torch_mm_forward, X, dense_weight_T,
         warmup_runs=args.warmup_runs,
         test_runs=args.test_runs
     )
@@ -393,25 +391,25 @@ if __name__ == "__main__":
     )
 
     triton_mean, triton_std = benchmark_function(
-        ks_triton, X_T, K_bmm, pattern, 'BSL',
+        ks_triton, X_T, K_bmm_T, pattern, 'BSL',
         warmup_runs=args.warmup_runs,
         test_runs=args.test_runs
     )
 
-    # try:
-    #     ksl_mean, ksl_std = benchmark_function(
-    #         ksl_forward, ksl, X_T,
-    #         warmup_runs=args.warmup_runs,
-    #         test_runs=args.test_runs
-    #     )
-    # except Exception as e:
-    #     print(f"KSLinear benchmark failed: {e}")
-    #     ksl_mean, ksl_std = None, None
+    try:
+        ksl_mean, ksl_std = benchmark_function(
+            ksl_forward, ksl, X_T,
+            warmup_runs=args.warmup_runs,
+            test_runs=args.test_runs
+        )
+    except Exception as e:
+        print(f"KSLinear benchmark failed: {e}")
+        ksl_mean, ksl_std = None, None
 
     
     speedup_bmm = torch_mean / bmm_mean 
     speedup_triton = torch_mean / triton_mean
-    # speedup_ksl = torch_mean / ksl_mean if ksl_mean is not None else None
+    speedup_ksl = torch_mean / ksl_mean if ksl_mean is not None else None
     theoretical_speedup = dense_weight.numel() / ksl.get_weights_size()
 
     results = {
@@ -424,10 +422,10 @@ if __name__ == "__main__":
         'algo': 'kernel',
         'warmup_runs': args.warmup_runs,
         'test_runs': args.test_runs,
-        # 'ksl_time_ms': {
-        #     'mean': ksl_mean,
-        #     'std': ksl_std
-        # } if ksl_mean is not None else None,
+        'ksl_time_ms': {
+            'mean': ksl_mean,
+            'std': ksl_std
+        } if ksl_mean is not None else None,
         'torch_time_ms': {
             'mean': torch_mean,
             'std': torch_std
@@ -449,12 +447,12 @@ if __name__ == "__main__":
     print(f"\n{'='*60}")
     print(f"BENCHMARK RESULTS")
     print(f"{'='*60}")
-    # print(f"KSLinear ({args.algo}): {ksl_mean:.3f} ± {ksl_std:.3f} ms" if ksl_mean is not None else "KSLinear benchmark failed")
+    print(f"KSLinear :             {ksl_mean:.3f} ± {ksl_std:.3f} ms" if ksl_mean is not None else "KSLinear benchmark failed")
     print(f"Torch MM:              {torch_mean:.3f} ± {torch_std:.3f} ms")
     print(f"BMM:                   {bmm_mean:.3f} ± {bmm_std:.3f} ms")
     print(f"Triton:              {triton_mean:.3f} ± {triton_std:.3f} ms")
     print(f"Speedup BMM:           {speedup_bmm:.3f}x")
     print(f"Speedup Triton:        {speedup_triton:.3f}x")
-    # if ksl_mean is not None:
-    #     print(f"Speedup KSLinear:      {speedup_ksl:.3f}x")
+    if ksl_mean is not None:
+        print(f"Speedup KSLinear:      {speedup_ksl:.3f}x")
     print(f"Theoretical Speedup:   {theoretical_speedup:.3f}x")
