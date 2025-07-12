@@ -1,6 +1,77 @@
 import torch
 import triton
 import triton.language as tl
+from ksmm_py.layer.kronecker_sparse.interface import KSLinear
+
+import argparse
+from typing import List, Tuple
+import time
+
+
+def benchmark_function(func, *args, warmup_runs=10, test_runs=100):
+    """
+    Benchmark a function with warmup and multiple test runs.
+    Returns (mean_time_ms, std_time_ms).
+    """
+    device = args[0].device if hasattr(args[0], 'device') else 'cuda'
+    
+    # Warmup runs
+    torch.cuda.synchronize()
+    for _ in range(warmup_runs):            
+        _ = func(*args)
+    torch.cuda.synchronize()
+    
+    # Actual timing runs
+    times = []
+    torch.cuda.synchronize()
+    start_time = time.perf_counter()
+    for _ in range(test_runs):
+        _ = func(*args)
+    torch.cuda.synchronize()       
+    end_time = time.perf_counter()
+    times.append((end_time - start_time) * 1000)  # Convert to milliseconds
+    
+    mean_time = sum(times) / test_runs
+    std_time = (sum((t - mean_time) ** 2 for t in times) / test_runs) ** 0.5
+    
+    return mean_time, std_time
+
+
+def parse_patterns(pattern_str: str) -> List[Tuple[int, int, int, int]]:
+    """
+    Parse pattern string like "[(6,64,64,1),(1,768,192,2)]" into list of tuples.
+    """
+    # Remove brackets and spaces
+    pattern_str = pattern_str.strip("[]").replace(" ", "")
+    
+    # Split by ),( to get individual patterns
+    pattern_parts = pattern_str.split("),(")
+    patterns = []
+    
+    for i, part in enumerate(pattern_parts):
+        # Clean up the pattern string
+        if i == 0:
+            part = part.lstrip("(")
+        if i == len(pattern_parts) - 1:
+            part = part.rstrip(")")
+        
+        # Parse the four integers
+        values = [int(x) for x in part.split(",")]
+        if len(values) != 4:
+            raise ValueError(f"Each pattern must have exactly 4 values, got {len(values)}")
+        patterns.append(tuple(values))
+    
+    return patterns
+
+def torch_mm_forward(x, weight_transposed):
+    """Standard torch matrix multiplication."""
+    return torch.matmul(x, weight_transposed)
+
+
+def ksl_forward(ksl, x):
+    """KSLinear forward pass."""
+    return ksl(x)
+
 
 # This is a reference implementation of the BMM baseline from Appendix A.1 of the paper
 # used for verification purposes.
@@ -27,14 +98,48 @@ def kronecker_bmm_reference(X_bsf, K_bmm, pattern):
 
 
 
-configs=[
-    triton.Config({'BLOCK_SIZE_B': BB, 'BLOCK_SIZE_C': BC, 'BLOCK_SIZE_BATCH': BBATCH}, num_warps=num_warps, num_stages=num_stages)
-    for BB in [16, 32, 64]
-    for BC in [16, 32, 64]
-    for BBATCH in [16, 32, 64, 128]
-    for num_warps in [2, 4, 8]
-    for num_stages in [2, 3, 4]
-]
+# Reduced configuration space with sensible constraints
+configs = []
+
+
+# for BB in block_sizes:
+#     for BC in block_sizes:
+#         for BBATCH in batch_sizes:
+#             # Strategy 3: Limit num_warps based on total work per block
+#             total_work = BB * BC * BBATCH
+#             if total_work <= 1024:  # Small blocks
+#                 warp_options = [1, 2]
+#             elif total_work <= 4096:  # Medium blocks
+#                 warp_options = [2, 4]
+#             else:  # Large blocks
+#                 warp_options = [4, 8]
+            
+#             for num_warps in warp_options:
+#                 # Strategy 4: Limit num_stages based on memory requirements
+#                 # More stages = more shared memory usage
+#                 if total_work <= 2048:
+#                     stage_options = [2, 3, 4]  # Conservative for small blocks
+#                 elif total_work <= 8192:
+#                     stage_options = [3, 4, 5]  # Medium staging
+#                 else:
+#                     stage_options = [4, 5]     # Fewer stages for large blocks
+                
+#                 for num_stages in stage_options:
+#                     configs.append(
+#                         triton.Config(
+#                             {'BLOCK_SIZE_B': BB, 'BLOCK_SIZE_C': BC, 'BLOCK_SIZE_BATCH': BBATCH},
+#                             num_warps=num_warps,
+#                             num_stages=num_stages
+#                         )
+#                     )
+
+# Optional: Add some hand-picked configurations based on your problem size
+# You can uncomment and modify these based on your typical (a,b,c,d) patterns
+configs.extend([
+    triton.Config({'BLOCK_SIZE_B': 128, 'BLOCK_SIZE_C': 16, 'BLOCK_SIZE_BATCH': 128}, num_warps=8, num_stages=4),
+])
+
+print(f"Generated {len(configs)} configurations")
 
 
 @triton.autotune(
@@ -81,9 +186,8 @@ def ks_fused_kernel(
     b_offsets = tl.arange(0, BLOCK_SIZE_B)
     c_offsets = tl.arange(0, BLOCK_SIZE_C)
 
-    # 3. ACCUMULATOR: Initialize output tile
-    # This is the output-stationary part. Accumulator stays in registers.
-    accumulator = tl.zeros((BLOCK_SIZE_BATCH, BLOCK_SIZE_B), dtype=tl.float32)
+
+    
 
     # 4. POINTERS: Set up pointers to K and the first tile of X and Y
     # Pointer to the specific (c, b) block of K for this (i, j) tile
@@ -97,38 +201,39 @@ def ks_fused_kernel(
     y_row_base = i * b * d + j
 
     # 5. MAIN LOOP: Iterate over the reduction dimension 'c' 
-    for c_i in range(0, c, BLOCK_SIZE_C):
-        for b_j in range(0, b, BLOCK_SIZE_B):
+    for b_j in range(0, b, BLOCK_SIZE_B):
+        accumulator = tl.zeros((BLOCK_SIZE_BATCH, BLOCK_SIZE_B), dtype=tl.float32)
+        for c_i in range(0, c, BLOCK_SIZE_C):
             # Calculate the current tile's offsets
             b_offsets = b_j + tl.arange(0, BLOCK_SIZE_B)
             c_offsets = c_i + tl.arange(0, BLOCK_SIZE_C)
 
             # --- Load X tile (fused permutation) ---
             # Calculate strided column indices for X
-            x_feat_offsets = x_col_base + (c_i + c_offsets) * d
+            x_feat_offsets = x_col_base + (c_offsets) * d
             # Create pointers for the X tile
             x_ptrs = X_ptr + (batch_offsets[:, None] * stride_X_batch + x_feat_offsets[None, :] * stride_X_feat)
 
             # Load X tile with boundary checks
-            x_mask = (batch_offsets[:, None] < B) & ((c_i + c_offsets)[None, :] < c)
+            x_mask = (batch_offsets[:, None] < B) & ((c_offsets)[None, :] < c)
             x_tile = tl.load(x_ptrs, mask=x_mask, other=0.0)
 
             # --- Load K tile ---
             # K is stored contiguously for each (i,j) block, so this is a simple load.
-            k_ptrs = k_ptr + ((c_i + c_offsets)[:, None] * stride_K_c + b_offsets[None, :] * stride_K_b)
-            k_mask = ((c_i + c_offsets)[:, None] < c) & (b_offsets[None, :] < b)
+            k_ptrs = k_ptr + ((c_offsets)[:, None] * stride_K_c + b_offsets[None, :] * stride_K_b)
+            k_mask = ((c_offsets)[:, None] < c) & (b_offsets[None, :] < b)
             k_tile = tl.load(k_ptrs, mask=k_mask, other=0.0)
             # --- Matrix Multiply and Accumulate ---
             accumulator += tl.dot(x_tile, k_tile)
 
-    # 6. STORE Y TILE: Write result back to global memory (fused permutation)
-    # Calculate strided column indices for Y
-    y_feat_offsets = y_row_base + b_offsets * d
-    # Create pointers for the Y tile
-    y_ptrs = Y_ptr + (batch_offsets[:, None] * stride_Y_batch + y_feat_offsets[None, :] * stride_Y_feat)
-    # Store Y tile with boundary checks
-    y_mask = (batch_offsets[:, None] < B) & (b_offsets[None, :] < b)
-    tl.store(y_ptrs, accumulator, mask=y_mask)
+        # 6. STORE Y TILE: Write result back to global memory (fused permutation)
+        # Calculate strided column indices for Y
+        y_feat_offsets = y_row_base + b_offsets * d
+        # Create pointers for the Y tile
+        y_ptrs = Y_ptr + (batch_offsets[:, None] * stride_Y_batch + y_feat_offsets[None, :] * stride_Y_feat)
+        # Store Y tile with boundary checks
+        y_mask = (batch_offsets[:, None] < B) & (b_offsets[None, :] < b)
+        tl.store(y_ptrs, accumulator, mask=y_mask)
 
 
 def ks_triton(X, K_bmm, pattern, layout='BSF'):
@@ -192,60 +297,164 @@ def ks_triton(X, K_bmm, pattern, layout='BSF'):
     else:
         return Y_bsl
 
-# --- Verification ---
 if __name__ == "__main__":
-    # Use a sample pattern from the paper's experiments
-    # ViT-S/16 square matrix: (1, 192, 48, 2) and (2, 48, 192, 1)
-    # Let's use a simpler, more balanced pattern for a clear test
-    pattern = (a, b, c, d) = (4, 2, 2, 1)
+
+
+    parser = argparse.ArgumentParser(description='Benchmark KSLinear vs torch.mm speed')
+    parser.add_argument('--patterns', type=str, required=True,
+                       help='Patterns as string, e.g., "[(6,64,64,1)]"')
+    parser.add_argument('--batch_size', type=int, default=25088,
+                       help='Batch size for input tensor')
+    parser.add_argument('--warmup_runs', type=int, default=10,
+                       help='Number of warmup runs')
+    parser.add_argument('--test_runs', type=int, default=100,
+                       help='Number of test runs for averaging')
+    parser.add_argument('--output_file', type=str, default="output.json",
+                       help='Output JSON file for results')
+
+    args = parser.parse_args()
+
+    patterns = parse_patterns(args.patterns)
+    assert len(patterns) == 1, "Only one pattern is supported for this script"
     
+    a, b, c, d = patterns[0]
+    pattern = patterns[0]
+
     # Input dimensions
     N = a * c * d
     M = a * b * d
-    B = 128 # Batch size
+    B = args.batch_size
     
     print(f"Pattern (a,b,c,d): {pattern}")
     print(f"Input shape (B, N): ({B}, {N})")
     print(f"Output shape (B, M): ({B}, {M})")
-    
-    # Create random tensors on GPU
-    X = torch.randn((B, N), device='cuda', dtype=torch.float16)
-    
-    # Create the pre-permuted K tensor, as used by BMM baseline
-    # Shape: (ad, b, c)
-    K_bmm = torch.randn((a * d, b, c), device='cuda', dtype=torch.float16)
-    print("K_bmm shape:", K_bmm.shape)
 
-    # --- Run reference implementation ---
-    print("\nRunning reference BMM implementation...")
-    Y_reference = kronecker_bmm_reference(X, K_bmm, pattern)
+    ksl = KSLinear(
+        patterns=patterns,
+        weights=None,  # Let it initialize randomly
+        algo="kernel",
+        dtype=torch.float16,
+        bs_last=True,
+        device='cuda'
+    )
+    dense_weight = ksl.get_dense_product()
+    dense_weight_transposed = dense_weight.T    
+    K_bmm = ksl.factors[0].view(a * d, c, b).transpose(-1, -2).contiguous()  # Shape (a*d, c, b)
+    print(f"K_bmm shape: {K_bmm.shape}")
     
-    # --- Run Triton implementation ---
-    print("Running Triton fused kernel...")
-    X_triton = X.T
-    Y_triton = ks_triton(X_triton, K_bmm, pattern, layout='BSL')
+
+    X = torch.randn((B, N), device='cuda', dtype=torch.float16)
+    X_T = X.T
+    
+
+    print("Running BMM")
+    # K_bmm = torch.randn((a * d, b, c), device='cuda', dtype=torch.float16)
+    Y_bmm = kronecker_bmm_reference(X, K_bmm, pattern)
+    
+
+    print("Running Triton Fused Kernel")
+    Y_triton = ks_triton(X_T, K_bmm, pattern, layout='BSL')
     Y_triton = Y_triton.T  # Transpose back to BSF if needed
 
-    # --- Compare results ---
-    print("\nVerifying results...")
-    are_close = torch.allclose(Y_reference, Y_triton, atol=1e-2, rtol=1e-3)
-    print(f"Results are close: {are_close}")
+    print("Running Torch MM")
+    Y_torch = torch_mm_forward(X, dense_weight_transposed)
 
-    if are_close:
-        print("✅ Verification successful!")
+
+    print("Running KSLinear")
+    try:
+        Y_ksl = ksl(X_T)
+        Y_ksl = Y_ksl.T  # Transpose back to BSF if needed
         
-        # Optional: Benchmark
-        try:
-            print("\n--- Benchmarking (ms) ---")
-            ms_ref = triton.testing.do_bench(lambda: kronecker_bmm_reference(X, K_bmm, pattern))
-            ms_triton = triton.testing.do_bench(lambda: ks_triton(X_triton, K_bmm, pattern, layout='BSL'))
-            print(f"Reference BMM: {ms_ref:.4f} ms")
-            print(f"Triton Fused:  {ms_triton:.4f} ms")
-            speedup = ms_ref / ms_triton
-            print(f"Speedup: {speedup:.2f}x")
-        except Exception as e:
-            print(f"Could not run benchmark: {e}")
+    except Exception as e:
+        print(f"KSLinear forward pass failed: {e}")
+        Y_ksl = None
 
-    else:
-        print("❌ Verification failed!")
-        print("Max absolute difference:", torch.max(torch.abs(Y_reference - Y_triton)).item())
+
+    # --- Compare results --- all compare to Y_torch
+    print("\nVerifying results...")
+    bmm_close = torch.allclose(Y_bmm, Y_torch, rtol=1e-2, atol=1e-2)
+    triton_close = torch.allclose(Y_triton, Y_torch, rtol=1e-2, atol=1e-2)
+    # ksl_close = torch.allclose(Y_ksl, Y_torch, rtol=1e-2, atol=1e-2)
+    print(f"BMM close to Torch MM: {bmm_close}", "max diff:", torch.max(torch.abs(Y_bmm - Y_torch)).item())
+    print(f"Triton close to Torch MM: {triton_close}", "max diff:", torch.max(torch.abs(Y_triton - Y_torch)).item())
+    # print(f"KSLinear close to Torch MM: {ksl_close}")
+
+        
+    torch_mean, torch_std = benchmark_function(
+        torch_mm_forward, X, dense_weight_transposed,
+        warmup_runs=args.warmup_runs,
+        test_runs=args.test_runs
+    )
+
+    bmm_mean, bmm_std = benchmark_function(
+        kronecker_bmm_reference, X, K_bmm, pattern,
+        warmup_runs=args.warmup_runs,
+        test_runs=args.test_runs
+    )
+
+    triton_mean, triton_std = benchmark_function(
+        ks_triton, X_T, K_bmm, pattern, 'BSL',
+        warmup_runs=args.warmup_runs,
+        test_runs=args.test_runs
+    )
+
+    # try:
+    #     ksl_mean, ksl_std = benchmark_function(
+    #         ksl_forward, ksl, X_T,
+    #         warmup_runs=args.warmup_runs,
+    #         test_runs=args.test_runs
+    #     )
+    # except Exception as e:
+    #     print(f"KSLinear benchmark failed: {e}")
+    #     ksl_mean, ksl_std = None, None
+
+    
+    speedup_bmm = torch_mean / bmm_mean 
+    speedup_triton = torch_mean / triton_mean
+    # speedup_ksl = torch_mean / ksl_mean if ksl_mean is not None else None
+    theoretical_speedup = dense_weight.numel() / ksl.get_weights_size()
+
+    results = {
+        'patterns': patterns,
+        'dim_in': N,
+        'dim_out': M,
+        'batch_size': B,
+        'batch_size_last': True,
+        'dtype': 'float16',
+        'algo': 'kernel',
+        'warmup_runs': args.warmup_runs,
+        'test_runs': args.test_runs,
+        # 'ksl_time_ms': {
+        #     'mean': ksl_mean,
+        #     'std': ksl_std
+        # } if ksl_mean is not None else None,
+        'torch_time_ms': {
+            'mean': torch_mean,
+            'std': torch_std
+        },
+        'bmm_time_ms': {
+            'mean': bmm_mean,
+            'std': bmm_std
+        },
+        'triton_time_ms': {
+            'mean': triton_mean,
+            'std': triton_std
+        },
+        'speedup_bmm': speedup_bmm,
+        'speedup_triton': speedup_triton,
+        # 'speedup_ksl': speedup_ksl,
+        'theoretical_speedup': theoretical_speedup,
+    }
+    # Print results
+    print(f"\n{'='*60}")
+    print(f"BENCHMARK RESULTS")
+    print(f"{'='*60}")
+    # print(f"KSLinear ({args.algo}): {ksl_mean:.3f} ± {ksl_std:.3f} ms" if ksl_mean is not None else "KSLinear benchmark failed")
+    print(f"Torch MM:              {torch_mean:.3f} ± {torch_std:.3f} ms")
+    print(f"BMM:                   {bmm_mean:.3f} ± {bmm_std:.3f} ms")
+    print(f"Triton:              {triton_mean:.3f} ± {triton_std:.3f} ms")
+    print(f"Speedup BMM:           {speedup_bmm:.3f}x")
+    print(f"Speedup Triton:        {speedup_triton:.3f}x")
+    # if ksl_mean is not None:
+    #     print(f"Speedup KSLinear:      {speedup_ksl:.3f}x")
+    print(f"Theoretical Speedup:   {theoretical_speedup:.3f}x")
