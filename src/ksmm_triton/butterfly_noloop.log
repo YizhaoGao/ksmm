@@ -1,0 +1,44 @@
+Generated 264 configurations
+[<triton.runtime.autotuner.Config object at 0x7b2a13b2a310>, <triton.runtime.autotuner.Config object at 0x7b2a13b2a490>, <triton.runtime.autotuner.Config object at 0x7b2a13b2a690>, <triton.runtime.autotuner.Config object at 0x7b2a13b2a710>, <triton.runtime.autotuner.Config object at 0x7b2a13b2a6d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d6d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d710>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d750>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d810>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d850>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d8d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d950>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d9d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2da50>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d510>, <triton.runtime.autotuner.Config object at 0x7b2a13b2dad0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2c5d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d050>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d0d0>, <triton.runtime.autotuner.Config object at 0x7b2a13b2d150>]
+Generated 20 configurations
+---------Butterfly patterns for size 2048 n=11: [(1024, 2, 2, 1), (512, 2, 2, 2), (256, 2, 2, 4), (128, 2, 2, 8), (64, 2, 2, 16), (32, 2, 2, 32), (16, 2, 2, 64), (8, 2, 2, 128), (4, 2, 2, 256), (2, 2, 2, 512), (1, 2, 2, 1024)]----------
+
+Benchmarking Triton implementation...
+Applying Triton Kronecker-Sparse factor: (1024, 2, 2, 1)
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 2, num_ctas: 1, num_stages: 3, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 2, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 2, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 4, num_ctas: 1, num_stages: 3, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 4, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 16, num_warps: 4, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 4, num_ctas: 1, num_stages: 3, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 4, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 4, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 8, num_ctas: 1, num_stages: 3, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 8, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 32, num_warps: 8, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 64, num_warps: 4, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 64, num_warps: 4, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 64, num_warps: 8, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 64, num_warps: 8, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 128, num_warps: 4, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 128, num_warps: 4, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 128, num_warps: 8, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Autotuning kernel ks_fused_kernel with config BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 128, num_warps: 8, num_ctas: 1, num_stages: 5, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None
+Triton autotuning for function ks_fused_kernel finished after 2.67s; best config selected: BLOCK_SIZE_B: 2, BLOCK_SIZE_C: 2, BLOCK_SIZE_BATCH: 128, num_warps: 4, num_ctas: 1, num_stages: 4, num_buffers_warp_spec: 0, num_consumer_groups: 0, reg_dec_producer: 0, reg_inc_consumer: 0, maxnreg: None;
+Applying Triton Kronecker-Sparse factor: (512, 2, 2, 2)
+Applying Triton Kronecker-Sparse factor: (256, 2, 2, 4)
+Applying Triton Kronecker-Sparse factor: (128, 2, 2, 8)
+Applying Triton Kronecker-Sparse factor: (64, 2, 2, 16)
+Applying Triton Kronecker-Sparse factor: (32, 2, 2, 32)
+Applying Triton Kronecker-Sparse factor: (16, 2, 2, 64)
+Applying Triton Kronecker-Sparse factor: (8, 2, 2, 128)
+Applying Triton Kronecker-Sparse factor: (4, 2, 2, 256)
+Applying Triton Kronecker-Sparse factor: (2, 2, 2, 512)
+Applying Triton Kronecker-Sparse factor: (1, 2, 2, 1024)
+n=11, Triton mean time: 1.0623 ms, std: 10.5165 ms
+n=11, Torch mean time: 0.3810 ms, std: 3.7717 ms
+Speedup: 0.3586x
+----------Benchmark for n=11 completed.----------
+
+
