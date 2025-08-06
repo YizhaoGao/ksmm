@@ -8,3 +8,24 @@ __pycache__/
 # *.log
 build/*
 *.out
+*.safetensors
+
+# Build artifacts
+*.o
+*.so
+*.cuda.o
+.ninja_deps
+.ninja_log
+build.ninja
+
+# Model checkpoints and weights
+*.pth
+*.bin
+*.safetensors
+train/ckpt/
+checkpoints/
+
+# Large files that should use Git LFS
+*.model
+*.h5
+*.hdf5

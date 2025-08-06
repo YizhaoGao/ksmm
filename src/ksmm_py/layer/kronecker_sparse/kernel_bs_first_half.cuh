@@ -8,6 +8,13 @@
 void best_kernel_bs_first_half(half *input, half *values, half *output, int batch_size, int a, int b, int c, int d, dim3 &blockGrid, dim3 &threadsPerBlock){
 	while (1) {
 		threadsPerBlock.y = 1;
+		if (batch_size == 25088 && a == 32 && b == 64 && c == 64 && d == 1) {
+			threadsPerBlock.x = 64;
+			blockGrid.x = 32;
+			blockGrid.y = 98;
+			kernel_bs_first_half4<bool, 64, 32, 256, 16, 16, 4, false, 4><<<blockGrid, threadsPerBlock>>>(input, values, batch_size, output, a, b, c, d);
+			break;
+		}
 		if (batch_size == 25088 && a == 1 && b == 512 && c == 512 && d == 128) {
 			threadsPerBlock.x = 256;
 			blockGrid.x = 1024;
