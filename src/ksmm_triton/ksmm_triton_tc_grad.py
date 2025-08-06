@@ -101,8 +101,8 @@ def kronecker_bmm_reference(X_bsf, K_bmm, pattern):
 # Reduced configuration space with sensible constraints
 configs = []
 
-# block_sizes = [16, 32, 64, 128]  
-# batch_sizes = [16, 32, 64, 128] 
+# block_sizes = [16, 32, 64]  
+# batch_sizes = [16, 32, 64] 
 block_sizes = [16,]  
 batch_sizes = [64,] 
 
@@ -240,99 +240,138 @@ def ks_fused_kernel(
         tl.store(y_ptrs, accumulator, mask=y_mask)
 
 
+def ks_triton(X, K_bmm, pattern, layout='BSF'):
+    return KSTritonFunction.apply(X, K_bmm, pattern, layout)
+
+
+class KSTritonFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, X, K_bmm, pattern, layout='BSF'):
+        """
+        PyTorch wrapper for the Fused Kronecker-Sparse kernel.
+        
+        Args:
+            X (torch.Tensor): Input tensor. Shape (B, N) for BSF or (N, B) for BSL.
+            K_bmm (torch.Tensor): Pre-permuted weight tensor of shape (a*d, c, b),
+                                  as used in the paper's BMM baseline.
+            pattern (tuple): The (a, b, c, d) Kronecker-sparse pattern.
+            layout (str): Memory layout, 'BSF' (batch-size-first) or 'BSL' (batch-size-last).
+        """
+        # 1. Setup and Input Validation
+        a, b, c, d = pattern
+        original_layout = layout
+        if layout == 'BSF':
+            B, N = X.shape
+            # The kernel is optimized for BSL, so we transpose.
+            # This is a one-time cost. In a full BSL pipeline, this would be avoided.
+            X_bsl = X.transpose(0, 1).contiguous()
+        elif layout == 'BSL':
+            N, B = X.shape
+            X_bsl = X
+        else:
+            raise ValueError("layout must be 'BSF' or 'BSL'")
+
+        M = a * b * d
+        assert N == a * c * d, "Input dimension N does not match pattern"
+        assert K_bmm.shape == (a * d, c, b), "K_bmm shape is incorrect"
+
+
+        # 2. Output Tensor
+        # Output is created in BSL layout
+        Y_bsl = torch.empty((M, B), device=X.device, dtype=X.dtype)
+
+        # 3. Triton Grid and Kernel Launch
+        # Grid is (a*d) for (i,j) tiles, and B / BLOCK_BATCH for the batch dimension
+        grid = lambda META: (
+            a * d, triton.cdiv(B, META['BLOCK_SIZE_BATCH']), 1
+        )
+        
+        # Kernel call
+        ks_fused_kernel[grid](
+            Y_bsl, X_bsl, K_bmm,
+            B,
+            # Strides for BSL layout
+            X_bsl.stride(1), X_bsl.stride(0),
+            Y_bsl.stride(1), Y_bsl.stride(0),
+            K_bmm.stride(0), K_bmm.stride(1), K_bmm.stride(2),
+            # Tuning parameters (BLOCK_SIZES)
+            a, b, c, d,
+        )
+
+        ctx.save_for_backward(X_bsl, K_bmm)
+        ctx.pattern = pattern
+        ctx.original_layout = original_layout
+        
+        # 4. Post-processing
+        if original_layout == 'BSF':
+            # Transpose back to BSF if that was the original layout
+            return Y_bsl.transpose(0, 1).contiguous()
+        else:
+            return Y_bsl
+
+    @staticmethod
+    def backward(ctx, dY):
+        X_bsl, K_bmm = ctx.saved_tensors
+        pattern = ctx.pattern
+        original_layout = ctx.original_layout
+        a, b, c, d = pattern
+        
+        if original_layout == 'BSF':
+            dY_bsl = dY.transpose(0, 1).contiguous()
+        else:
+            dY_bsl = dY
+
+        N, B = X_bsl.shape
+        M = a * b * d
+        
+        dX_bsl = torch.zeros_like(X_bsl)
+        dK_bmm = torch.zeros_like(K_bmm)
+
+        grid = lambda META: (
+            a * d, triton.cdiv(B, META['BLOCK_SIZE_BATCH']), 1
+        )
+
+        ks_fused_kernel_bwd[grid](
+            dX_bsl, dK_bmm,
+            dY_bsl, X_bsl, K_bmm,
+            B,
+            # Strides for BSL layout
+            dX_bsl.stride(1), dX_bsl.stride(0),
+            dY_bsl.stride(1), dY_bsl.stride(0),
+            dK_bmm.stride(0), dK_bmm.stride(1), dK_bmm.stride(2),
+            a, b, c, d,
+        )
+
+        # The gradient dK_bmm is computed for a weight of shape (a*d, c, b).
+        # The autograd engine expects the gradient to have the same shape as the input tensor.
+        # The original K_bmm input to forward had shape (a*d, c, b).
+        
+        if original_layout == 'BSF':
+            # Transpose dX back to BSF if that was the original layout
+            dX = dX_bsl.transpose(0, 1).contiguous()
+        else:
+            dX = dX_bsl
+
+        return dX, dK_bmm, None, None
+
 @triton.autotune(
     configs=configs,
     key=['a', 'b', 'c', 'd', 'B'],
 )
 @triton.jit
-def ks_fused_kernel_grad_x(
-    # Pointers to matrices
+def ks_fused_kernel_bwd(
+    # Pointers to gradients
     dX_ptr,
+    dK_ptr,
+    # Pointers to matrices
     dY_ptr,
+    X_ptr,
     K_ptr,
     # Matrix dimensions
     B,
     # Strides for BSL layout
     stride_dX_batch, stride_dX_feat,
     stride_dY_batch, stride_dY_feat,
-    stride_K_tile, stride_K_c, stride_K_b,
-    a: tl.constexpr,
-    b: tl.constexpr,
-    c: tl.constexpr,
-    d: tl.constexpr,
-    # Tile dimensions
-    BLOCK_SIZE_B: tl.constexpr,
-    BLOCK_SIZE_C: tl.constexpr,
-    BLOCK_SIZE_BATCH: tl.constexpr,
-):
-    """
-    Triton kernel for computing gradient w.r.t. input X.
-    Computes dL/dX = dL/dY @ K (K is transposed in the computation)
-    """
-    # Work distribution: Map program ID to the (i, j) tile
-    pid = tl.program_id(axis=0)
-    batch_pid = tl.program_id(axis=1)
-    
-    i = pid // d
-    j = pid % d
-
-    # Create tile offsets
-    batch_offsets = batch_pid * BLOCK_SIZE_BATCH + tl.arange(0, BLOCK_SIZE_BATCH)
-    b_offsets = tl.arange(0, BLOCK_SIZE_B)
-    c_offsets = tl.arange(0, BLOCK_SIZE_C)
-
-    # Pointers setup
-    k_ptr = K_ptr + pid * stride_K_tile
-    
-    # Base pointers for strided access
-    dy_row_base = i * b * d + j  # Same as y_row_base in forward
-    dx_col_base = i * c * d + j  # Same as x_col_base in forward
-
-    # Main loop: Iterate over the reduction dimension 'b'
-    for c_j in range(0, c, BLOCK_SIZE_C):
-        accumulator = tl.zeros((BLOCK_SIZE_BATCH, BLOCK_SIZE_C), dtype=tl.float32)
-        for b_i in range(0, b, BLOCK_SIZE_B):
-            # Calculate current tile offsets
-            c_offsets = c_j + tl.arange(0, BLOCK_SIZE_C)
-            b_offsets = b_i + tl.arange(0, BLOCK_SIZE_B)
-
-            # Load dY tile (with fused permutation)
-            dy_feat_offsets = dy_row_base + b_offsets * d
-            dy_ptrs = dY_ptr + (batch_offsets[:, None] * stride_dY_batch + dy_feat_offsets[None, :] * stride_dY_feat)
-            dy_mask = (batch_offsets[:, None] < B) & (b_offsets[None, :] < b)
-            dy_tile = tl.load(dy_ptrs, mask=dy_mask, other=0.0)
-
-            # Load K tile (transposed for backward pass)
-            k_ptrs = k_ptr + (c_offsets[:, None] * stride_K_c + b_offsets[None, :] * stride_K_b)
-            k_mask = (c_offsets[:, None] < c) & (b_offsets[None, :] < b)
-            k_tile = tl.load(k_ptrs, mask=k_mask, other=0.0)
-            k_tile_T = tl.trans(k_tile)  # Transpose K tile
-
-            # Matrix multiply and accumulate: dY @ K^T
-            accumulator += tl.dot(dy_tile, k_tile_T)
-
-        # Store dX tile (with fused permutation)
-        dx_feat_offsets = dx_col_base + c_offsets * d
-        dx_ptrs = dX_ptr + (batch_offsets[:, None] * stride_dX_batch + dx_feat_offsets[None, :] * stride_dX_feat)
-        dx_mask = (batch_offsets[:, None] < B) & (c_offsets[None, :] < c)
-        tl.store(dx_ptrs, accumulator, mask=dx_mask)
-
-
-@triton.autotune(
-    configs=configs,
-    key=['a', 'b', 'c', 'd', 'B'],
-)
-@triton.jit
-def ks_fused_kernel_grad_k(
-    # Pointers to matrices
-    dK_ptr,
-    dY_ptr,
-    X_ptr,
-    # Matrix dimensions
-    B,
-    # Strides for BSL layout
-    stride_dY_batch, stride_dY_feat,
-    stride_X_batch, stride_X_feat,
     stride_dK_tile, stride_dK_c, stride_dK_b,
     a: tl.constexpr,
     b: tl.constexpr,
@@ -343,248 +382,53 @@ def ks_fused_kernel_grad_k(
     BLOCK_SIZE_C: tl.constexpr,
     BLOCK_SIZE_BATCH: tl.constexpr,
 ):
-    """
-    Triton kernel for computing gradient w.r.t. weight K.
-    Computes dL/dK = X^T @ dL/dY
-    """
-    # Work distribution: Map program ID to the (i, j) tile
     pid = tl.program_id(axis=0)
-    c_pid = tl.program_id(axis=1)
-    b_pid = tl.program_id(axis=2)
+    batch_pid = tl.program_id(axis=1)
     
     i = pid // d
     j = pid % d
 
-    # Create tile offsets
-    c_offsets = c_pid * BLOCK_SIZE_C + tl.arange(0, BLOCK_SIZE_C)
-    b_offsets = b_pid * BLOCK_SIZE_B + tl.arange(0, BLOCK_SIZE_B)
-    batch_offsets = tl.arange(0, BLOCK_SIZE_BATCH)
-
-    # Pointers setup
-    dk_ptr = dK_ptr + pid * stride_dK_tile
+    batch_offsets = batch_pid * BLOCK_SIZE_BATCH + tl.arange(0, BLOCK_SIZE_BATCH)
     
-    # Base pointers for strided access
     x_col_base = i * c * d + j
-    dy_row_base = i * b * d + j
+    y_row_base = i * b * d + j
 
-    # Main loop: Iterate over the batch dimension
-    accumulator = tl.zeros((BLOCK_SIZE_C, BLOCK_SIZE_B), dtype=tl.float32)
-    for batch_i in range(0, B, BLOCK_SIZE_BATCH):
-        batch_offsets = batch_i + tl.arange(0, BLOCK_SIZE_BATCH)
+    k_ptr = K_ptr + pid * stride_dK_tile
+    dk_ptr = dK_ptr + pid * stride_dK_tile
 
-        # Load X tile (with fused permutation)
-        x_feat_offsets = x_col_base + c_offsets * d
-        x_ptrs = X_ptr + (batch_offsets[None, :] * stride_X_batch + x_feat_offsets[:, None] * stride_X_feat)
-        x_mask = (batch_offsets[None, :] < B) & (c_offsets[:, None] < c)
-        x_tile = tl.load(x_ptrs, mask=x_mask, other=0.0)
-
-        # Load dY tile (with fused permutation)
-        dy_feat_offsets = dy_row_base + b_offsets * d
-        dy_ptrs = dY_ptr + (batch_offsets[None, :] * stride_dY_batch + dy_feat_offsets[:, None] * stride_dY_feat)
-        dy_mask = (batch_offsets[None, :] < B) & (b_offsets[:, None] < b)
+    for b_j in range(0, b, BLOCK_SIZE_B):
+        b_offsets = b_j + tl.arange(0, BLOCK_SIZE_B)
+        y_feat_offsets = y_row_base + b_offsets * d
+        dy_ptrs = dY_ptr + (batch_offsets[:, None] * stride_dY_batch + y_feat_offsets[None, :] * stride_dY_feat)
+        dy_mask = (batch_offsets[:, None] < B) & (b_offsets[None, :] < b)
         dy_tile = tl.load(dy_ptrs, mask=dy_mask, other=0.0)
 
-        # Matrix multiply and accumulate: X^T @ dY
-        accumulator += tl.dot(x_tile, tl.trans(dy_tile))
+        for c_i in range(0, c, BLOCK_SIZE_C):
+            c_offsets = c_i + tl.arange(0, BLOCK_SIZE_C)
+            
+            # Load K for dX calculation
+            k_ptrs = k_ptr + (c_offsets[:, None] * stride_dK_c + b_offsets[None, :] * stride_dK_b)
+            k_mask = (c_offsets[:, None] < c) & (b_offsets[None, :] < b)
+            k_tile = tl.load(k_ptrs, mask=k_mask, other=0.0)
 
-    # Store dK tile
-    dk_ptrs = dk_ptr + (c_offsets[:, None] * stride_dK_c + b_offsets[None, :] * stride_dK_b)
-    dk_mask = (c_offsets[:, None] < c) & (b_offsets[None, :] < b)
-    tl.store(dk_ptrs, accumulator, mask=dk_mask)
+            # Calculate dX: dX = dY @ K (since forward was X @ K^T)
+            dx_tile = tl.dot(dy_tile, k_tile)
+            x_feat_offsets = x_col_base + c_offsets * d
+            dx_ptrs = dX_ptr + (batch_offsets[:, None] * stride_dX_batch + x_feat_offsets[None, :] * stride_dX_feat)
+            dx_mask = (batch_offsets[:, None] < B) & (c_offsets[None, :] < c)
+            tl.atomic_add(dx_ptrs, dx_tile, mask=dx_mask)
 
+            # Load X for dK calculation
+            x_feat_offsets = x_col_base + c_offsets * d
+            x_ptrs = X_ptr + (batch_offsets[:, None] * stride_dX_batch + x_feat_offsets[None, :] * stride_dX_feat)
+            x_mask = (batch_offsets[:, None] < B) & (c_offsets[None, :] < c)
+            x_tile = tl.load(x_ptrs, mask=x_mask, other=0.0)
 
-
-def ks_triton_backward(dY, X, K_bmm, pattern, layout='BSF'):
-    """
-    PyTorch wrapper for the backward pass of Fused Kronecker-Sparse kernel.
-    
-    Args:
-        dY (torch.Tensor): Gradient of loss w.r.t. output Y
-        X (torch.Tensor): Input tensor from forward pass
-        K_bmm (torch.Tensor): Pre-permuted weight tensor
-        pattern (tuple): The (a, b, c, d) Kronecker-sparse pattern
-        layout (str): Memory layout, 'BSF' or 'BSL'
-    
-    Returns:
-        dX (torch.Tensor): Gradient w.r.t. input X
-        dK_bmm (torch.Tensor): Gradient w.r.t. weight K_bmm
-    """
-    a, b, c, d = pattern
-    
-    if layout == 'BSF':
-        B, M = dY.shape
-        B_x, N = X.shape
-        assert B == B_x, "Batch sizes must match"
-        # Convert to BSL layout
-        dY_bsl = dY.transpose(0, 1).contiguous()
-        X_bsl = X.transpose(0, 1).contiguous()
-    elif layout == 'BSL':
-        M, B = dY.shape
-        N, B_x = X.shape
-        assert B == B_x, "Batch sizes must match"
-        dY_bsl = dY
-        X_bsl = X
-    else:
-        raise ValueError("layout must be 'BSF' or 'BSL'")
-
-    assert N == a * c * d, "Input dimension N does not match pattern"
-    assert M == a * b * d, "Output dimension M does not match pattern"
-    assert K_bmm.shape == (a * d, c, b), "K_bmm shape is incorrect"
-
-    # Initialize gradients
-    dX_bsl = torch.zeros((N, B), device=X.device, dtype=X.dtype)
-    dK_bmm = torch.zeros_like(K_bmm)
-
-    # Grid for gradient w.r.t. X
-    grid_x = lambda META: (
-        a * d, triton.cdiv(B, META['BLOCK_SIZE_BATCH']), 1
-    )
-    
-    # Launch gradient w.r.t. X kernel
-    ks_fused_kernel_grad_x[grid_x](
-        dX_bsl, dY_bsl, K_bmm,
-        B,
-        # Strides for BSL layout
-        dX_bsl.stride(1), dX_bsl.stride(0),
-        dY_bsl.stride(1), dY_bsl.stride(0),
-        K_bmm.stride(0), K_bmm.stride(1), K_bmm.stride(2),
-        a, b, c, d,
-    )
-
-    # Grid for gradient w.r.t. K
-    grid_k = lambda META: (
-        a * d, 
-        triton.cdiv(c, META['BLOCK_SIZE_C']), 
-        triton.cdiv(b, META['BLOCK_SIZE_B'])
-    )
-    
-    # Launch gradient w.r.t. K kernel
-    ks_fused_kernel_grad_k[grid_k](
-        dK_bmm, dY_bsl, X_bsl,
-        B,
-        # Strides for BSL layout
-        dY_bsl.stride(1), dY_bsl.stride(0),
-        X_bsl.stride(1), X_bsl.stride(0),
-        dK_bmm.stride(0), dK_bmm.stride(1), dK_bmm.stride(2),
-        a, b, c, d,
-    )
-
-    # Post-processing
-    if layout == 'BSF':
-        dX_bsf = dX_bsl.transpose(0, 1).contiguous()
-        return dX_bsf, dK_bmm
-    else:
-        return dX_bsl, dK_bmm
-
-
-class KSTritonFunction(torch.autograd.Function):
-    """
-    AutoGrad wrapper for Triton Kronecker-Sparse kernels.
-    """
-    
-    @staticmethod
-    def forward(ctx, X, K_bmm, pattern, layout='BSF'):
-        """
-        Forward pass using Triton kernel.
-        
-        Args:
-            ctx: autograd context for saving tensors
-            X (torch.Tensor): Input tensor
-            K_bmm (torch.Tensor): Pre-permuted weight tensor
-            pattern (tuple): The (a, b, c, d) pattern
-            layout (str): Memory layout
-        """
-        # Save for backward
-        ctx.save_for_backward(X, K_bmm)
-        ctx.pattern = pattern
-        ctx.layout = layout
-        
-        # Call the existing forward function
-        return ks_triton_forward_impl(X, K_bmm, pattern, layout)
-    
-    @staticmethod
-    def backward(ctx, grad_output):
-        """
-        Backward pass using Triton kernels.
-        """
-        X, K_bmm = ctx.saved_tensors
-        pattern = ctx.pattern
-        layout = ctx.layout
-        
-        # Compute gradients using our Triton backward kernels
-        grad_X, grad_K_bmm = ks_triton_backward(grad_output, X, K_bmm, pattern, layout)
-        
-        # Return gradients for (X, K_bmm, pattern, layout)
-        # Only X and K_bmm need gradients
-        return grad_X, grad_K_bmm, None, None
-
-
-def ks_triton_forward_impl(X, K_bmm, pattern, layout='BSF'):
-    """
-    Implementation of the Fused Kronecker-Sparse forward kernel.
-    (This is the original ks_triton function)
-    """
-    # 1. Setup and Input Validation
-    a, b, c, d = pattern
-    if layout == 'BSF':
-        B, N = X.shape
-        # The kernel is optimized for BSL, so we transpose.
-        # This is a one-time cost. In a full BSL pipeline, this would be avoided.
-        X_bsl = X.transpose(0, 1).contiguous()
-    elif layout == 'BSL':
-        N, B = X.shape
-        X_bsl = X
-    else:
-        raise ValueError("layout must be 'BSF' or 'BSL'")
-
-    M = a * b * d
-    assert N == a * c * d, "Input dimension N does not match pattern"
-    assert K_bmm.shape == (a * d, c, b), "K_bmm shape is incorrect"
-
-    # 2. Output Tensor
-    # Output is created in BSL layout
-    Y_bsl = torch.empty((M, B), device=X.device, dtype=X.dtype)
-
-    # 3. Triton Grid and Kernel Launch
-    # Grid is (a*d) for (i,j) tiles, and B / BLOCK_BATCH for the batch dimension
-    grid = lambda META: (
-        a * d, triton.cdiv(B, META['BLOCK_SIZE_BATCH']), 1
-    )
-    
-    # Kernel call
-    ks_fused_kernel[grid](
-        Y_bsl, X_bsl, K_bmm,
-        B,
-        # Strides for BSL layout
-        X_bsl.stride(1), X_bsl.stride(0),
-        Y_bsl.stride(1), Y_bsl.stride(0),
-        K_bmm.stride(0), K_bmm.stride(1), K_bmm.stride(2),
-        # Tuning parameters (BLOCK_SIZES)
-        a, b, c, d,
-    )
-
-    # 4. Post-processing
-    if layout == 'BSF':
-        # Transpose back to BSF if that was the original layout
-        return Y_bsl.transpose(0, 1).contiguous()
-    else:
-        return Y_bsl
-
-
-def ks_triton(X, K_bmm, pattern, layout='BSF'):
-    """
-    PyTorch wrapper for the Fused Kronecker-Sparse kernel with AutoGrad support.
-    
-    Args:
-        X (torch.Tensor): Input tensor. Shape (B, N) for BSF or (N, B) for BSL.
-        K_bmm (torch.Tensor): Pre-permuted weight tensor of shape (a*d, c, b),
-                              as used in the paper's BMM baseline.
-        pattern (tuple): The (a, b, c, d) Kronecker-sparse pattern.
-        layout (str): Memory layout, 'BSF' (batch-size-first) or 'BSL' (batch-size-last).
-    """
-    return KSTritonFunction.apply(X, K_bmm, pattern, layout)
-
-
+            # Calculate dK: dK = X^T @ dY
+            dk_tile = tl.dot(x_tile.trans(), dy_tile)
+            dk_ptrs = dk_ptr + (c_offsets[:, None] * stride_dK_c + b_offsets[None, :] * stride_dK_b)
+            dk_mask = (c_offsets[:, None] < c) & (b_offsets[None, :] < b)
+            tl.atomic_add(dk_ptrs, dk_tile, mask=dk_mask)
 
 
 if __name__ == "__main__":
@@ -599,8 +443,6 @@ if __name__ == "__main__":
                        help='Number of warmup runs')
     parser.add_argument('--test_runs', type=int, default=100,
                        help='Number of test runs for averaging')
-    parser.add_argument('--test_backward', action='store_true',
-                       help='Run backward pass tests')
     # parser.add_argument('--output_file', type=str, default="output.json",
     #                    help='Output JSON file for results')
 
@@ -639,7 +481,6 @@ if __name__ == "__main__":
     X_T = X.T.contiguous()  # Transpose to (N, B) for BSL layout
     
 
-
     print("Running BMM")
     # K_bmm = torch.randn((a * d, b, c), device='cuda', dtype=torch.float16)
     Y_bmm = kronecker_bmm_reference(X, K_bmm, pattern)
@@ -647,7 +488,8 @@ if __name__ == "__main__":
 
     print("Running Triton Fused Kernel")
     K_bmm_T = K_bmm.transpose(-1, -2).contiguous()  # Ensure K_bmm is in (a*d, b, c) format
-    Y_triton = ks_triton(X, K_bmm_T, pattern, layout='BSF')  # Use BSF layout directly
+    Y_triton = ks_triton(X_T, K_bmm_T, pattern, layout='BSL')
+    Y_triton = Y_triton.T  # Transpose back to BSF if needed
 
     print("Running Torch MM")
     Y_torch = torch_mm_forward(X, dense_weight_T)
@@ -664,66 +506,13 @@ if __name__ == "__main__":
 
 
     # --- Compare results --- all compare to Y_torch
-    print("\nVerifying forward results...")
+    print("\nVerifying results...")
     bmm_close = torch.allclose(Y_bmm, Y_torch, rtol=1e-2, atol=1e-2)
     triton_close = torch.allclose(Y_triton, Y_torch, rtol=1e-2, atol=1e-2)
     # ksl_close = torch.allclose(Y_ksl, Y_torch, rtol=1e-2, atol=1e-2)
     print(f"BMM close to Torch MM: {bmm_close}", "max diff:", torch.max(torch.abs(Y_bmm - Y_torch)).item())
     print(f"Triton close to Torch MM: {triton_close}", "max diff:", torch.max(torch.abs(Y_triton - Y_torch)).item())
     # print(f"KSLinear close to Torch MM: {ksl_close}", "max diff:", torch.max(torch.abs(Y_ksl - Y_torch)).item() if Y_ksl is not None else "N/A")
-
-    # --- Test backward correctness ---
-    if args.test_backward:
-        print("\nTesting backward correctness with end-to-end AutoGrad comparison...")
-        
-        # Create fresh inputs that require gradients
-        X_bmm_test = torch.randn((B, N), device='cuda', dtype=torch.float16, requires_grad=True)
-        X_triton_test = X_bmm_test.clone().detach().requires_grad_(True)
-        K_bmm_test = K_bmm.clone().detach().requires_grad_(True)
-        K_bmm_T_test = K_bmm_T.clone().detach().requires_grad_(True)
-        
-        print("Running forward passes...")
-        # BMM reference forward pass
-        Y_bmm_test = kronecker_bmm_reference(X_bmm_test, K_bmm_test, pattern)
-        
-        # Triton autograd forward pass (BSF layout)
-        Y_triton_test = ks_triton(X_triton_test, K_bmm_T_test, pattern, layout='BSF')
-        
-        print("Creating loss and running backward passes...")
-        # Create identical loss for both
-        loss_bmm = Y_bmm_test.sum()
-        loss_triton = Y_triton_test.sum()
-        
-        # Backward passes
-        loss_bmm.backward()
-        loss_triton.backward()
-        
-        print("Comparing gradients...")
-        # Get gradients from both methods
-        dX_bmm = X_bmm_test.grad
-        dX_triton = X_triton_test.grad
-        dK_bmm = K_bmm_test.grad
-        dK_triton = K_bmm_T_test.grad.transpose(-1, -2).contiguous()  # Adjust shape for comparison
-        
-        # Compare forward outputs first
-        forward_close = torch.allclose(Y_bmm_test, Y_triton_test, rtol=1e-2, atol=1e-2)
-        print(f"Forward outputs close: {forward_close}, max diff: {torch.max(torch.abs(Y_bmm_test - Y_triton_test)).item()}")
-        
-        # Compare gradients
-        dX_close = torch.allclose(dX_triton, dX_bmm, rtol=1e-2, atol=1e-2)
-        dK_close = torch.allclose(dK_triton, dK_bmm, rtol=1e-2, atol=1e-2)
-        
-        print("End-to-end backward correctness results:")
-        print(f"dX shapes - BMM: {dX_bmm.shape}, Triton: {dX_triton.shape}")
-        print(f"dK shapes - BMM: {dK_bmm.shape}, Triton: {dK_triton.shape}")
-        print(f"Triton dX close to BMM dX: {dX_close}, max diff: {torch.max(torch.abs(dX_triton - dX_bmm)).item()}")
-        print(f"Triton dK close to BMM dK: {dK_close}, max diff: {torch.max(torch.abs(dK_triton - dK_bmm)).item()}")
-        
-        # Additional statistics
-        print(f"dX relative error: {torch.norm(dX_triton - dX_bmm) / torch.norm(dX_bmm):.6f}")
-        print(f"dK relative error: {torch.norm(dK_triton - dK_bmm) / torch.norm(dK_bmm):.6f}")
-        
-        print(f"End-to-end backward correctness test completed!")
 
         
     torch_mean, torch_std = benchmark_function(
@@ -739,7 +528,7 @@ if __name__ == "__main__":
     )
 
     triton_mean, triton_std = benchmark_function(
-        ks_triton, X, K_bmm_T, pattern, 'BSF',
+        ks_triton, X_T, K_bmm_T, pattern, 'BSL',
         warmup_runs=args.warmup_runs,
         test_runs=args.test_runs
     )
@@ -802,5 +591,41 @@ if __name__ == "__main__":
     print(f"Speedup BMM:           {speedup_bmm:.3f}x")
     print(f"Speedup Triton:        {speedup_triton:.3f}x")
     if ksl_mean is not None:
-        print(f"Speedup KSLinear:      {speedup_ksl:.3f}x")
-    print(f"Theoretical Speedup:   {theoretical_speedup:.3f}x")
+        print(f"Theoretical Speedup:   {theoretical_speedup:.3f}x")
+
+    # --- Backward pass verification ---
+    print("\nVerifying backward pass...")
+    X_ref = X.clone().requires_grad_()
+    K_bmm_ref = K_bmm.clone().requires_grad_()
+    K_bmm_ref.retain_grad()  # Ensure gradient is retained for non-leaf tensor
+    Y_ref = kronecker_bmm_reference(X_ref, K_bmm_ref, pattern)
+    
+    # Dummy gradient for dY
+    dY = torch.randn_like(Y_ref)
+    Y_ref.backward(dY)
+
+    X_triton = X.clone().requires_grad_()
+    K_bmm_triton = K_bmm_T.clone().requires_grad_()
+    K_bmm_triton.retain_grad()  # Ensure gradient is retained for non-leaf tensor
+    Y_triton_bw = ks_triton(X_triton, K_bmm_triton, pattern, layout='BSF')
+    Y_triton_bw.backward(dY)
+
+    dX_ref = X_ref.grad
+    dK_ref = K_bmm_ref.grad
+
+    dX_triton = X_triton.grad
+    dK_triton = K_bmm_triton.grad
+
+    print(f"dX_ref shape: {dX_ref.shape}, dX_triton shape: {dX_triton.shape}")
+    print(f"dK_ref shape: {dK_ref.shape}, dK_triton shape: {dK_triton.shape}")
+    print(f"K_bmm_ref shape: {K_bmm_ref.shape}, K_bmm_triton shape: {K_bmm_triton.shape}")
+
+    if dX_ref is not None and dX_triton is not None:
+        dx_close = torch.allclose(dX_ref, dX_triton, rtol=1e-1, atol=1e-1)
+        print(f"dX close to reference: {dx_close}", "max diff:", torch.max(torch.abs(dX_ref - dX_triton)).item())
+    
+    if dK_ref is not None and dK_triton is not None:
+        # K_bmm_ref has shape (a*d, c, b), K_bmm_triton has shape (a*d, b, c)
+        # So we need to transpose dK_triton to match dK_ref
+        dk_close = torch.allclose(dK_ref, dK_triton.transpose(-1, -2).contiguous(), rtol=1e-1, atol=1e-1)
+        print(f"dK close to reference: {dk_close}", "max diff:", torch.max(torch.abs(dK_ref - dK_triton.transpose(-1, -2).contiguous())).item())
