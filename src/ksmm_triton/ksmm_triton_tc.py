@@ -101,10 +101,10 @@ def kronecker_bmm_reference(X_bsf, K_bmm, pattern):
 # Reduced configuration space with sensible constraints
 configs = []
 
-block_sizes = [16, 32, 64, 128]  
-batch_sizes = [16, 32, 64, 128] 
-# block_sizes = [16,]  
-# batch_sizes = [64,] 
+# block_sizes = [16, 32, 64, 128]  
+# batch_sizes = [16, 32, 64, 128] 
+block_sizes = [16,]  
+batch_sizes = [32,] 
 
 for BB in block_sizes:
     for BC in block_sizes:
