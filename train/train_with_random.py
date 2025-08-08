@@ -123,11 +123,11 @@ def generate_random_data(input_size: int, num_samples: int, batch_size: int,
     
     if bs_last:
         # BSL layout: (input_size, batch_size)
-        inputs = torch.randn(num_samples, input_size, dtype=dtype, device=device) * 10
+        inputs = torch.randn(num_samples, input_size, dtype=dtype, device=device) * 2
     else:
         # BSF layout: (batch_size, input_size)
-        inputs = torch.randn(num_samples, input_size, dtype=dtype, device=device) * 10
-    
+        inputs = torch.randn(num_samples, input_size, dtype=dtype, device=device) * 2
+
     dataset = TensorDataset(inputs)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     
@@ -318,6 +318,34 @@ def save_model_and_stats(model: KSLinearTriton, optimizer: optim.Optimizer, sche
     print(f"Saved checkpoint: {checkpoint_path}")
 
 
+def save_loss_curves(train_losses: list, val_losses: list, epochs: list, rank: int, output_dir: str, save_prefix: str):
+    """Save loss curves to JSON and CSV files for analysis."""
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Save to JSON
+    loss_data = {
+        'rank': rank,
+        'epochs': epochs,
+        'train_losses': train_losses,
+        'val_losses': val_losses
+    }
+    
+    json_path = os.path.join(output_dir, f"{save_prefix}_rank_{rank}_loss_curves.json")
+    with open(json_path, 'w') as f:
+        json.dump(loss_data, f, indent=2)
+    
+    # Save to CSV for easy plotting
+    csv_path = os.path.join(output_dir, f"{save_prefix}_rank_{rank}_loss_curves.csv")
+    import csv
+    with open(csv_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['epoch', 'train_loss', 'val_loss', 'rank'])
+        for epoch, train_loss, val_loss in zip(epochs, train_losses, val_losses):
+            writer.writerow([epoch, train_loss, val_loss, rank])
+    
+    print(f"Saved loss curves: {json_path} and {csv_path}")
+
+
 def main():
     args = parse_args()
     
@@ -332,9 +360,9 @@ def main():
     dense_weight = load_dense_weight(args.weight_path, device, dtype)
     out_features, in_features = dense_weight.shape
     
-    # Create KS linear chain
-    print(f"\nCreating KS linear chain for shape [{out_features}, {in_features}] with rank {args.rank}")
-    print(f"Using implementation: {args.impl}")
+    # # Create KS linear chain
+    # print(f"\nCreating KS linear chain for shape [{out_features}, {in_features}] with rank {args.rank}")
+    # print(f"Using implementation: {args.impl}")
     ks_chain = create_butterfly_chain(
         shape=[out_features, in_features],
         rank=args.rank,
@@ -343,18 +371,11 @@ def main():
         bs_last=args.bs_last,
         impl=args.impl
     )
-
     print(ks_chain)
 
-    # ## print weights to see initialization
-    # for i, weight in enumerate(ks_chain.weights):
-    #     print(f"Weight {i} : {weight}")
 
-
-
-
-    ## Use a dense layer to verify the training script
-    ## Results shows that the loss goes to 0 very quickly
+    # # Use a dense layer to verify the training script
+    # # Results shows that the loss goes to 0 very quickly
     # ks_chain = create_simple_ks_layer(
     #     in_features=in_features,
     #     out_features=out_features,
@@ -415,6 +436,11 @@ def main():
     
     # Training loop
     best_val_loss = float('inf')
+    
+    # Track loss curves for analysis
+    train_losses = []
+    val_losses = []
+    epochs = []
     
     for epoch in range(1, args.num_epochs + 1):
         ks_chain.train()
@@ -494,6 +520,11 @@ def main():
         # Validation phase
         avg_val_loss = evaluate_model(ks_chain, val_loader, dense_weight, criterion, device, args.bs_last)
         
+        # Store loss curves
+        train_losses.append(avg_train_loss)
+        val_losses.append(avg_val_loss)
+        epochs.append(epoch)
+        
         # Update learning rate scheduler
         if scheduler:
             if args.scheduler.lower() == 'plateau':
@@ -533,6 +564,9 @@ def main():
         compression_stats, args.output_dir, f"{args.save_prefix}_final", 
         avg_grad_norm, avg_weight_grad_norms, weight_names
     )
+    
+    # Save loss curves for rank comparison study
+    save_loss_curves(train_losses, val_losses, epochs, args.rank, args.output_dir, args.save_prefix)
     
     print(f"\nTraining completed!")
     print(f"Best validation loss: {best_val_loss:.6f}")

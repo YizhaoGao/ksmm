@@ -1,0 +1,82 @@
+[
+  {
+    "rank": 2,
+    "final_train_loss": 1.143409390449524,
+    "final_val_loss": 1.145155666366456,
+    "min_train_loss": 1.1434093804359435,
+    "min_val_loss": 1.144897074926467,
+    "min_train_epoch": 195,
+    "min_val_epoch": 127,
+    "num_epochs": 200
+  },
+  {
+    "rank": 4,
+    "final_train_loss": 1.1340556678771974,
+    "final_val_loss": 1.1398354390310863,
+    "min_train_loss": 1.1340556678771974,
+    "min_val_loss": 1.1395198087843637,
+    "min_train_epoch": 200,
+    "min_val_epoch": 156,
+    "num_epochs": 200
+  },
+  {
+    "rank": 8,
+    "final_train_loss": 1.118167866230011,
+    "final_val_loss": 1.123928319840204,
+    "min_train_loss": 1.118167866230011,
+    "min_val_loss": 1.123632099893358,
+    "min_train_epoch": 200,
+    "min_val_epoch": 134,
+    "num_epochs": 200
+  },
+  {
+    "rank": 16,
+    "final_train_loss": 1.086641456604004,
+    "final_val_loss": 1.0979607805373175,
+    "min_train_loss": 1.086641456604004,
+    "min_val_loss": 1.0975650605701266,
+    "min_train_epoch": 200,
+    "min_val_epoch": 189,
+    "num_epochs": 200
+  },
+  {
+    "rank": 32,
+    "final_train_loss": 1.026299826145172,
+    "final_val_loss": 1.0447311590588282,
+    "min_train_loss": 1.026299826145172,
+    "min_val_loss": 1.0447311590588282,
+    "min_train_epoch": 200,
+    "min_val_epoch": 200,
+    "num_epochs": 200
+  },
+  {
+    "rank": 64,
+    "final_train_loss": 0.9158374650478364,
+    "final_val_loss": 0.949682633082072,
+    "min_train_loss": 0.9158374650478364,
+    "min_val_loss": 0.9495949612723456,
+    "min_train_epoch": 200,
+    "min_val_epoch": 199,
+    "num_epochs": 200
+  },
+  {
+    "rank": 128,
+    "final_train_loss": 0.7281083166599274,
+    "final_val_loss": 0.7763942546314664,
+    "min_train_loss": 0.7281083166599274,
+    "min_val_loss": 0.7763942546314664,
+    "min_train_epoch": 200,
+    "min_val_epoch": 200,
+    "num_epochs": 200
+  },
+  {
+    "rank": 512,
+    "final_train_loss": 0.1132404839396476,
+    "final_val_loss": 0.1367891329148459,
+    "min_train_loss": 0.1132404839396476,
+    "min_val_loss": 0.1367891329148459,
+    "min_train_epoch": 200,
+    "min_val_epoch": 200,
+    "num_epochs": 200
+  }
+]

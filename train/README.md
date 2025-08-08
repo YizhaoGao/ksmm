@@ -1,13 +1,26 @@
-# KS Linear Chai```bash
+# KS Linear Chai
+
+```bash
 python train_with_random.py \
     --weight_path ckpt/gate_proj_weights0.pth \
     --rank 4 \
     --impl bmm \
     --batch_size 64 \
-    --num_epochs 50 \
+    --num_epochs 200 \
     --lr 1e-3 \
-    --output_dir ./trained_models
-```g
+    --output_dir ./trained_models \
+    --log_grad_norm
+
+
+python rank_sweep_study.py \
+    --weight_path ckpt/gate_proj_weights0.pth  \
+    --ranks 2 4 8 16 32 64 128 512 \
+    --num_epochs 200 \
+    --output_dir ./rank_study \
+    --log_scale
+
+```
+
 
 This directory contains scripts for training Kronecker-Sparse (KS) linear chains to approximate dense weight matrices.
 
