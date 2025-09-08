@@ -14,14 +14,19 @@ def kronecker_bmm_reference(X_bsf, K_bmm, pattern):
     """
     a, b, c, d = pattern
     B = X_bsf.shape[0]
-    
+
     # Step 1: Permute Input X (equivalent to XQ^T)
     # Reshape and transpose to gather the correct elements
     X_perm = X_bsf.reshape(B, a, c, d).transpose(-1, -2).reshape(B, a * d, c).contiguous().transpose(0, 1)
+    ## X_perm shape is now (ad, B, c)
 
     # Step 2: Batched Matrix Multiply (Ỹ = X̃K̃^T)
     # K_bmm has shape (ad, b, c). We need its transpose for the matmul.
-    K_bmm_T = K_bmm.transpose(-1, -2)  # Shape (ad, c, b)
+    if K_bmm.shape == (a * d, c, b):
+        K_bmm_T = K_bmm
+    else:
+        K_bmm_T = K_bmm.transpose(-1, -2)  # Shape (ad, c, b)
+
     Y_perm = torch.bmm(X_perm, K_bmm_T)
 
     # Step 3: Permute Output Y back (equivalent to ỸP^T)
@@ -565,3 +570,66 @@ def create_simple_ks_layer(
         raise ValueError(f"out_features {out_features} doesn't match pattern output size {expected_out}")
     
     return KSLinearTriton(patterns=[pattern], **kwargs)
+
+
+def create_given_pattern_ks_layer(
+    in_features: int,
+    out_features: int,
+    patterns: List[Tuple[int, int, int, int]],
+    **kwargs
+) -> KSLinearTriton:
+    """
+    Create a KSLinearTriton module with a given pattern chain.
+    
+    Args:
+        in_features (int): Input feature dimension
+        out_features (int): Output feature dimension  
+        patterns (List[Tuple[int, int, int, int]]): List of (a, b, c, d) patterns
+            defining the Kronecker-sparse structure for the chain
+        **kwargs: Additional arguments for KSLinearTriton constructor
+    
+    Returns:
+        KSLinearTriton: Multi-layer module with the specified pattern chain
+        
+    Raises:
+        ValueError: If pattern chain doesn't match input/output dimensions
+        
+    Example:
+        # Create a 3-layer chain: 64 -> 32 -> 16 -> 8
+        patterns = [(1, 2, 64, 1), (1, 2, 32, 1), (1, 1, 16, 2)]
+        layer = create_given_pattern_ks_layer(64, 8, patterns)
+    """
+    if not patterns:
+        raise ValueError("At least one pattern must be provided")
+    
+    # Validate first pattern input matches in_features
+    first_pattern = patterns[0]
+    a, b, c, d = first_pattern
+    expected_input = a * c * d
+    if in_features != expected_input:
+        raise ValueError(
+            f"in_features {in_features} doesn't match first pattern input size {expected_input} "
+            f"(pattern: {first_pattern})"
+        )
+    
+    # Validate last pattern output matches out_features
+    last_pattern = patterns[-1]
+    a, b, c, d = last_pattern
+    expected_output = a * b * d
+    if out_features != expected_output:
+        raise ValueError(
+            f"out_features {out_features} doesn't match last pattern output size {expected_output} "
+            f"(pattern: {last_pattern})"
+        )
+    
+    # Validate pattern chain compatibility (this will be checked again in KSLinearTriton.__init__)
+    for i in range(len(patterns) - 1):
+        current_out = patterns[i][0] * patterns[i][1] * patterns[i][3]  # a * b * d
+        next_in = patterns[i + 1][0] * patterns[i + 1][2] * patterns[i + 1][3]  # a * c * d
+        if current_out != next_in:
+            raise ValueError(
+                f"Pattern chain incompatible: pattern {i} output size {current_out} "
+                f"doesn't match pattern {i+1} input size {next_in}"
+            )
+    
+    return KSLinearTriton(patterns=patterns, **kwargs)
