@@ -37,7 +37,9 @@ def parse_args():
                         help='Use batch-size-last layout instead of batch-size-first')
     parser.add_argument('--impl', type=str, default='bmm', choices=['triton', 'bmm'],
                         help='Implementation choice - triton or bmm (default: bmm)')
-    
+    parser.add_argument('--block_size', type=int, default=1,
+                        help='Block size for butterfly patterns (default: 1)')
+
     # Training parameters
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size for training (default: 32)')
@@ -360,12 +362,13 @@ def main():
     dense_weight = load_dense_weight(args.weight_path, device, dtype)
     out_features, in_features = dense_weight.shape
     
-    # # Create KS linear chain
-    # print(f"\nCreating KS linear chain for shape [{out_features}, {in_features}] with rank {args.rank}")
-    # print(f"Using implementation: {args.impl}")
+    # Create KS linear chain
+    print(f"\nCreating KS linear chain for shape [{out_features}, {in_features}] with rank {args.rank}, block_size {args.block_size}")
+    print(f"Using implementation: {args.impl}")
     ks_chain = create_butterfly_chain(
         shape=[out_features, in_features],
         rank=args.rank,
+        block_size=args.block_size,
         dtype=dtype,
         device=device,
         bs_last=args.bs_last,
@@ -428,6 +431,7 @@ def main():
     )
     
     print(f"\nStarting training for {args.num_epochs} epochs...")
+    print(f"Rank: {args.rank}, Block size: {args.block_size}")
     print(f"Optimizer: {args.optimizer}, LR: {args.lr}, Weight decay: {args.weight_decay}")
     print(f"Scheduler: {args.scheduler}")
     print(f"Implementation: {args.impl}")

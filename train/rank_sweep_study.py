@@ -29,6 +29,10 @@ def parse_args():
                         help='List of ranks to test (default: [2, 4, 8, 16, 32, 64, 128, 256, 512])')
     parser.add_argument('--max_rank', type=int, default=None,
                         help='Maximum rank to test (will filter ranks list)')
+    parser.add_argument('--block_sizes', type=int, nargs='+', default=[1, 2, 4, 8],
+                        help='List of block sizes to test (default: [1, 2, 4, 8])')
+    parser.add_argument('--max_block_size', type=int, default=None,
+                        help='Maximum block size to test (will filter block_sizes list)')
     
     # Training parameters
     parser.add_argument('--num_epochs', type=int, default=50,
@@ -71,10 +75,10 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_training_for_rank(rank: int, args, rank_output_dir: str):
-    """Run training for a specific rank."""
+def run_training_for_rank_and_block_size(rank: int, block_size: int, args, rank_block_output_dir: str):
+    """Run training for a specific rank and block size combination."""
     print(f"\n{'='*60}")
-    print(f"Training with rank {rank}")
+    print(f"Training with rank {rank}, block_size {block_size}")
     print(f"{'='*60}")
     
     # Construct command for training script
@@ -82,12 +86,13 @@ def run_training_for_rank(rank: int, args, rank_output_dir: str):
         'python', 'train_with_random.py',
         '--weight_path', args.weight_path,
         '--rank', str(rank),
+        '--block_size', str(block_size),
         '--num_epochs', str(args.num_epochs),
         '--batch_size', str(args.batch_size),
         '--lr', str(args.lr),
         '--num_samples', str(args.num_samples),
-        '--output_dir', rank_output_dir,
-        '--save_prefix', f'rank_{rank}',
+        '--output_dir', rank_block_output_dir,
+        '--save_prefix', f'rank_{rank}_block_{block_size}',
         '--impl', args.impl,
         '--optimizer', args.optimizer,
         '--scheduler', args.scheduler,
@@ -102,54 +107,54 @@ def run_training_for_rank(rank: int, args, rank_output_dir: str):
         # Run the training script
         result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)), 
                               capture_output=True, text=True, check=True)
-        print(f"Training completed successfully for rank {rank}")
+        print(f"Training completed successfully for rank {rank}, block_size {block_size}")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"Training failed for rank {rank}!")
+        print(f"Training failed for rank {rank}, block_size {block_size}!")
         print(f"Error: {e}")
         print(f"Stdout: {e.stdout}")
         print(f"Stderr: {e.stderr}")
         return False
 
 
-def load_loss_curves(output_dir: str, ranks: list):
-    """Load loss curves from all rank experiments."""
+def load_loss_curves(output_dir: str, rank_block_combinations: list):
+    """Load loss curves from all rank and block size experiments."""
     loss_data = {}
     
-    for rank in ranks:
-        rank_dir = os.path.join(output_dir, f'rank_{rank}')
-        csv_file = os.path.join(rank_dir, f'rank_{rank}_rank_{rank}_loss_curves.csv')
+    for rank, block_size in rank_block_combinations:
+        rank_block_dir = os.path.join(output_dir, f'rank_{rank}_block_{block_size}')
+        csv_file = os.path.join(rank_block_dir, f'rank_{rank}_block_{block_size}_rank_{rank}_loss_curves.csv')
         
         if os.path.exists(csv_file):
             try:
                 df = pd.read_csv(csv_file)
-                loss_data[rank] = {
+                loss_data[(rank, block_size)] = {
                     'epochs': df['epoch'].tolist(),
                     'train_losses': df['train_loss'].tolist(),
                     'val_losses': df['val_loss'].tolist()
                 }
-                print(f"Loaded loss curves for rank {rank}")
+                print(f"Loaded loss curves for rank {rank}, block_size {block_size}")
             except Exception as e:
-                print(f"Failed to load loss curves for rank {rank}: {e}")
+                print(f"Failed to load loss curves for rank {rank}, block_size {block_size}: {e}")
         else:
-            print(f"Loss curves file not found for rank {rank}: {csv_file}")
+            print(f"Loss curves file not found for rank {rank}, block_size {block_size}: {csv_file}")
     
     return loss_data
 
 
 def plot_loss_curves(loss_data: dict, args, output_dir: str):
-    """Plot loss curves for all ranks."""
+    """Plot loss curves for all rank and block size combinations."""
     
     # Create subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
     
-    # Color map for different ranks
+    # Color map for different combinations
     colors = plt.cm.tab10(np.linspace(0, 1, len(loss_data)))
     
     # Plot training losses
-    for i, (rank, data) in enumerate(sorted(loss_data.items())):
+    for i, ((rank, block_size), data) in enumerate(sorted(loss_data.items())):
         ax1.plot(data['epochs'], data['train_losses'], 
-                label=f'Rank {rank}', color=colors[i], linewidth=2)
+                label=f'Rank {rank}, Block {block_size}', color=colors[i], linewidth=2)
     
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Training Loss')
@@ -160,9 +165,9 @@ def plot_loss_curves(loss_data: dict, args, output_dir: str):
         ax1.set_yscale('log')
     
     # Plot validation losses
-    for i, (rank, data) in enumerate(sorted(loss_data.items())):
+    for i, ((rank, block_size), data) in enumerate(sorted(loss_data.items())):
         ax2.plot(data['epochs'], data['val_losses'], 
-                label=f'Rank {rank}', color=colors[i], linewidth=2)
+                label=f'Rank {rank}, Block {block_size}', color=colors[i], linewidth=2)
     
     ax2.set_xlabel('Epoch')
     ax2.set_ylabel('Validation Loss')
@@ -183,23 +188,23 @@ def plot_loss_curves(loss_data: dict, args, output_dir: str):
     plt.show()
     
     # Create final loss comparison plot
-    fig2, ax3 = plt.subplots(1, 1, figsize=(10, 6))
+    fig2, ax3 = plt.subplots(1, 1, figsize=(12, 8))
     
-    ranks_list = sorted(loss_data.keys())
-    final_train_losses = [loss_data[rank]['train_losses'][-1] for rank in ranks_list]
-    final_val_losses = [loss_data[rank]['val_losses'][-1] for rank in ranks_list]
+    combinations_list = sorted(loss_data.keys())
+    final_train_losses = [loss_data[combo]['train_losses'][-1] for combo in combinations_list]
+    final_val_losses = [loss_data[combo]['val_losses'][-1] for combo in combinations_list]
     
-    x_pos = np.arange(len(ranks_list))
+    x_pos = np.arange(len(combinations_list))
     width = 0.35
     
     ax3.bar(x_pos - width/2, final_train_losses, width, label='Final Training Loss', alpha=0.8)
     ax3.bar(x_pos + width/2, final_val_losses, width, label='Final Validation Loss', alpha=0.8)
     
-    ax3.set_xlabel('Rank')
+    ax3.set_xlabel('Rank, Block Size')
     ax3.set_ylabel('Final Loss')
-    ax3.set_title('Final Loss vs Rank')
+    ax3.set_title('Final Loss vs Rank and Block Size')
     ax3.set_xticks(x_pos)
-    ax3.set_xticklabels(ranks_list)
+    ax3.set_xticklabels([f'R{rank}, B{block_size}' for rank, block_size in combinations_list], rotation=45)
     ax3.legend()
     ax3.grid(True, alpha=0.3)
     if args.log_scale:
@@ -216,12 +221,12 @@ def plot_loss_curves(loss_data: dict, args, output_dir: str):
 
 
 def save_summary_results(loss_data: dict, args, output_dir: str):
-    """Save summary results of the rank sweep study."""
+    """Save summary results of the rank and block size sweep study."""
     
     summary_data = []
     
-    for rank in sorted(loss_data.keys()):
-        data = loss_data[rank]
+    for (rank, block_size) in sorted(loss_data.keys()):
+        data = loss_data[(rank, block_size)]
         final_train_loss = data['train_losses'][-1]
         final_val_loss = data['val_losses'][-1]
         min_train_loss = min(data['train_losses'])
@@ -233,6 +238,7 @@ def save_summary_results(loss_data: dict, args, output_dir: str):
         
         summary_data.append({
             'rank': rank,
+            'block_size': block_size,
             'final_train_loss': final_train_loss,
             'final_val_loss': final_val_loss,
             'min_train_loss': min_train_loss,
@@ -255,14 +261,15 @@ def save_summary_results(loss_data: dict, args, output_dir: str):
     print(f"Saved summary: {summary_json}")
     
     # Print summary table
-    print(f"\n{'='*80}")
-    print("RANK SWEEP STUDY SUMMARY")
-    print(f"{'='*80}")
-    print(f"{'Rank':<6} {'Final Train':<12} {'Final Val':<12} {'Min Train':<12} {'Min Val':<12}")
-    print(f"{'='*80}")
+    print(f"\n{'='*90}")
+    print("RANK AND BLOCK SIZE SWEEP STUDY SUMMARY")
+    print(f"{'='*90}")
+    print(f"{'Rank':<6} {'Block':<6} {'Final Train':<12} {'Final Val':<12} {'Min Train':<12} {'Min Val':<12}")
+    print(f"{'='*90}")
     
     for data_point in summary_data:
         print(f"{data_point['rank']:<6} "
+              f"{data_point['block_size']:<6} "
               f"{data_point['final_train_loss']:<12.6f} "
               f"{data_point['final_val_loss']:<12.6f} "
               f"{data_point['min_train_loss']:<12.6f} "
@@ -279,36 +286,44 @@ def main():
     if args.max_rank is not None:
         ranks = [r for r in ranks if r <= args.max_rank]
     
-    print(f"Starting rank sweep study with ranks: {ranks}")
+    # Filter block_sizes if max_block_size is specified  
+    block_sizes = args.block_sizes
+    if args.max_block_size is not None:
+        block_sizes = [bs for bs in block_sizes if bs <= args.max_block_size]
+    
+    print(f"Starting rank and block size sweep study")
+    print(f"Ranks: {ranks}")
+    print(f"Block sizes: {block_sizes}")
     print(f"Weight path: {args.weight_path}")
     print(f"Output directory: {args.output_dir}")
-    print(f"Number of epochs per rank: {args.num_epochs}")
+    print(f"Number of epochs per combination: {args.num_epochs}")
     
     # Create main output directory
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # Run training for each rank
-    successful_ranks = []
+    # Run training for each rank and block size combination
+    successful_combinations = []
     
     for rank in ranks:
-        rank_output_dir = os.path.join(args.output_dir, f'rank_{rank}')
-        os.makedirs(rank_output_dir, exist_ok=True)
-        
-        success = run_training_for_rank(rank, args, rank_output_dir)
-        if success:
-            successful_ranks.append(rank)
-        else:
-            print(f"Skipping rank {rank} due to training failure")
+        for block_size in block_sizes:
+            rank_block_output_dir = os.path.join(args.output_dir, f'rank_{rank}_block_{block_size}')
+            os.makedirs(rank_block_output_dir, exist_ok=True)
+            
+            success = run_training_for_rank_and_block_size(rank, block_size, args, rank_block_output_dir)
+            if success:
+                successful_combinations.append((rank, block_size))
+            else:
+                print(f"Skipping rank {rank}, block_size {block_size} due to training failure")
     
-    if not successful_ranks:
+    if not successful_combinations:
         print("No successful training runs. Exiting.")
         return
     
-    print(f"\nSuccessful ranks: {successful_ranks}")
+    print(f"\nSuccessful combinations: {successful_combinations}")
     
     # Load loss curves
     print(f"\nLoading loss curves...")
-    loss_data = load_loss_curves(args.output_dir, successful_ranks)
+    loss_data = load_loss_curves(args.output_dir, successful_combinations)
     
     if not loss_data:
         print("No loss curve data found. Exiting.")
@@ -322,7 +337,7 @@ def main():
     print(f"\nSaving summary results...")
     summary_data = save_summary_results(loss_data, args, args.output_dir)
     
-    print(f"\nRank sweep study completed!")
+    print(f"\nRank and block size sweep study completed!")
     print(f"Results saved to: {args.output_dir}")
 
 
