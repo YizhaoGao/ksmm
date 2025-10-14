@@ -374,7 +374,7 @@ def create_chain_from_dense_decomposition(
 
 
 # Example usage and convenience functions
-def create_butterfly_patterns(n: int) -> List[Tuple[int, int, int, int]]:
+def create_butterfly_patterns(n: int, block_size: int = 2) -> List[Tuple[int, int, int, int]]:
     """
     Generates the chain of Kronecker-Sparse patterns for a butterfly
     decomposition of a 2^n x 2^n square matrix.
@@ -404,10 +404,12 @@ def create_butterfly_patterns(n: int) -> List[Tuple[int, int, int, int]]:
     patterns = []
     # The loop variable 'l' corresponds to the index in the matrix product K_1 * ... * K_n
     for l in range(1, n + 1):
-        a = 2**(l - 1)
-        b = 2
-        c = 2
-        d = 2**(n - l)
+        a = 2**l // block_size
+        b = block_size
+        c = block_size
+        d = 2**(n - l + 1) // block_size
+        if (a == 0) or (d == 0):
+            continue # Skip invalid patterns when block_size > 2
         pattern = (a, b, c, d)
         patterns.append(pattern)
 
@@ -415,12 +417,14 @@ def create_butterfly_patterns(n: int) -> List[Tuple[int, int, int, int]]:
     # corresponds to the right-most matrix in the product.
     # W = K_1 * K_2 * ... * K_n
     # patterns = [pattern_for_Kn, ..., pattern_for_K2, pattern_for_K1]
+    print("butterfly patterns", patterns[::-1])
     return patterns[::-1]
 
 
 def create_butterfly_chain(
     shape: List[int],
     rank: int = 2,
+    block_size: int = 1,
     **kwargs
 ) -> KSLinearTriton:
     """
@@ -475,7 +479,7 @@ def create_butterfly_chain(
         n = power_of_2_dim.bit_length() - 1
     
     # Generate butterfly patterns for the power-of-2 dimension
-    butterfly_patterns = create_butterfly_patterns(n)
+    butterfly_patterns = create_butterfly_patterns(n, block_size)
     
     patterns = []
     

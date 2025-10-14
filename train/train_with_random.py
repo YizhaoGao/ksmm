@@ -37,8 +37,8 @@ def parse_args():
                         help='Use batch-size-last layout instead of batch-size-first')
     parser.add_argument('--impl', type=str, default='bmm', choices=['triton', 'bmm'],
                         help='Implementation choice - triton or bmm (default: bmm)')
-    parser.add_argument('--block_size', type=int, default=1,
-                        help='Block size for butterfly patterns (default: 1)')
+    parser.add_argument('--block_size', type=int, default=2,
+                        help='Block size for butterfly patterns (default: 2)')
 
     # Training parameters
     parser.add_argument('--batch_size', type=int, default=32,

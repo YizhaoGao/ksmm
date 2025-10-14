@@ -25,17 +25,17 @@ def parse_args():
                         help='Path to the .pth file containing the dense weight matrix')
     
     # Rank sweep parameters
-    parser.add_argument('--ranks', type=int, nargs='+', default=[2, 4, 8, 16, 32, 64, 128, 256, 512],
+    parser.add_argument('--ranks', type=int, nargs='+', default=[4, 8, 16, 32, 64, 128],
                         help='List of ranks to test (default: [2, 4, 8, 16, 32, 64, 128, 256, 512])')
     parser.add_argument('--max_rank', type=int, default=None,
                         help='Maximum rank to test (will filter ranks list)')
-    parser.add_argument('--block_sizes', type=int, nargs='+', default=[1, 2, 4, 8],
+    parser.add_argument('--block_sizes', type=int, nargs='+', default=[2],
                         help='List of block sizes to test (default: [1, 2, 4, 8])')
     parser.add_argument('--max_block_size', type=int, default=None,
                         help='Maximum block size to test (will filter block_sizes list)')
     
     # Training parameters
-    parser.add_argument('--num_epochs', type=int, default=50,
+    parser.add_argument('--num_epochs', type=int, default=100,
                         help='Number of training epochs for each rank (default: 50)')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size for training (default: 32)')
@@ -87,15 +87,15 @@ def run_training_for_rank_and_block_size(rank: int, block_size: int, args, rank_
         '--weight_path', args.weight_path,
         '--rank', str(rank),
         '--block_size', str(block_size),
-        '--num_epochs', str(args.num_epochs),
-        '--batch_size', str(args.batch_size),
-        '--lr', str(args.lr),
-        '--num_samples', str(args.num_samples),
+        # '--num_epochs', str(args.num_epochs),
+        # '--batch_size', str(args.batch_size),
+        # '--lr', str(args.lr),
+        # '--num_samples', str(args.num_samples),
         '--output_dir', rank_block_output_dir,
         '--save_prefix', f'rank_{rank}_block_{block_size}',
         '--impl', args.impl,
-        '--optimizer', args.optimizer,
-        '--scheduler', args.scheduler,
+        # '--optimizer', args.optimizer,
+        # '--scheduler', args.scheduler,
         '--device', args.device,
         '--dtype', args.dtype,
         '--save_interval', '999999',  # Only save final model to save space
@@ -104,16 +104,29 @@ def run_training_for_rank_and_block_size(rank: int, block_size: int, args, rank_
     print(f"Running command: {' '.join(cmd)}")
     
     try:
-        # Run the training script
-        result = subprocess.run(cmd, cwd=os.path.dirname(os.path.abspath(__file__)), 
-                              capture_output=True, text=True, check=True)
-        print(f"Training completed successfully for rank {rank}, block_size {block_size}")
-        return True
-    except subprocess.CalledProcessError as e:
+        # Run the training script with live output but also capture for error handling
+        print(f"Starting training process...")
+        process = subprocess.Popen(cmd, cwd=os.path.dirname(os.path.abspath(__file__)),
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
+                                 text=True, bufsize=1, universal_newlines=True)
+        
+        # Print output in real-time
+        for line in process.stdout:
+            print(line.rstrip())
+        
+        # Wait for process to complete and check return code
+        return_code = process.wait()
+        
+        if return_code == 0:
+            print(f"Training completed successfully for rank {rank}, block_size {block_size}")
+            return True
+        else:
+            print(f"Training failed for rank {rank}, block_size {block_size} with return code {return_code}")
+            return False
+            
+    except Exception as e:
         print(f"Training failed for rank {rank}, block_size {block_size}!")
         print(f"Error: {e}")
-        print(f"Stdout: {e.stdout}")
-        print(f"Stderr: {e.stderr}")
         return False
 
 
