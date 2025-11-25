@@ -14,7 +14,7 @@ The majic number for vit fc1 in ksmm is "6,64,64,1" "1,768,192,2", which is used
 ```bash 
     python train_with_random.py \
         --weight_path ../ckpt/vit_fc1_weights0.pth\
-        --patterns "[(12,64,64,1),(2,768,192,2)]" 
+        --patterns "[(6,128,128,1),(2,768,192,2)]" 
 ```
 Compression ratio: 3.69x
 Loss 0.819313 -> 0.6059
