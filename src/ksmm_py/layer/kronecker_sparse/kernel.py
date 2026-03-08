@@ -212,7 +212,8 @@ class Kernel(torch.autograd.Function):
                                                 continue
                                             if TILEK % stride_values != 0:
                                                 continue
-                                            smem = dtype.itemsize * 2 * (TILEY * TILEK + TILEK * TILEX)
+                                            precision_itemsize = {'half': 2, 'float': 4, 'fp8e4m3': 1, 'fp8e5m2': 1}.get(precision, dtype.itemsize)
+                                            smem = precision_itemsize * 2 * (TILEY * TILEK + TILEK * TILEX)
                                             if smem > 49152:
                                                 continue
                                             if TILEX > b:

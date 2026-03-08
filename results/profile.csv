@@ -1,0 +1,4 @@
+a,b,c,d,batch_size,dim_in,dim_out,dtype,bs_last,warmup,iters,cuda_ms,triton_ms,cuda_error
+32,16,32,2,1024,2048,1024,float16,False,100,1000,0.045857,0.051020,
+32,32,32,2,1024,2048,2048,float16,False,100,1000,0.059243,0.066499,
+32,64,32,2,1024,2048,4096,float16,False,100,1000,0.132743,0.103940,

@@ -48,3 +48,5 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)
 {
   m.def("forward", &forward, "Kernel for the forward pass with a Kronecker-sparse matrix (CUDA)");
 }
+
+// Force rebuild dummy comment
