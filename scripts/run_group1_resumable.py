@@ -133,8 +133,8 @@ def main():
     parser = argparse.ArgumentParser(description="Resumable Group 1 profiling")
     parser.add_argument("--output", type=str, default="results/group1.csv")
     parser.add_argument("--dtype", type=str, default="float16", choices=["float16", "float32"])
-    parser.add_argument("--warmup", type=int, default=100)
-    parser.add_argument("--iters", type=int, default=1000)
+    parser.add_argument("--warmup", type=int, default=10)
+    parser.add_argument("--iters", type=int, default=100)
     parser.add_argument("--triton_only", action="store_true", help="Skip CUDA")
     parser.add_argument("--cuda_only", action="store_true", help="Skip Triton")
     parser.add_argument("--start_from", type=int, default=1,
