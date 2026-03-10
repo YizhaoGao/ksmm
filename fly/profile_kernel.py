@@ -39,7 +39,8 @@ BENCH_ITERS = 100
 
 BLOCK_SIZES = [2, 4, 8, 16]
 TRANSFORM_SIZES = [512, 1024, 2048, 4096]
-BATCH_SIZES = [2**i for i in range(0, 13)]  # 1 .. 4096
+# BATCH_SIZES = [2**i for i in range(0, 13)]  # 1 .. 4096
+BATCH_SIZES = [4096]
 
 
 def bench(fn, warmup=WARMUP_ITERS, iters=BENCH_ITERS):

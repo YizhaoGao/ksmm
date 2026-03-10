@@ -471,7 +471,8 @@ def _group1_worker(rank, configs, args, output_file):
     device = "cuda"
     layout = "BSF"
 
-    batch_sizes = powers_of_2_range(2, 4096)
+    # batch_sizes = powers_of_2_range(2, 4096)
+    batch_sizes = [4096]
     fieldnames = _group1_fieldnames(args)
     rows = []
     total = len(configs) * len(batch_sizes)
