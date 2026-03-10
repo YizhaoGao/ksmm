@@ -261,41 +261,26 @@ class Kernel(torch.autograd.Function):
             
             path = directory + "/kernel"
 
-            # Check if the build directory exists, if not create it
-            if not os.path.exists("build/"):
-                os.makedirs("build/")
-                warn("Created 'build/' directory to store compilation files for the kernel.", UserWarning)
+            # Use a per-device build directory to avoid race conditions
+            # when multiple GPU processes compile concurrently.
+            device_id = torch.cuda.current_device() if torch.cuda.is_available() else 0
+            build_dir = f"build/device_{device_id}/"
+            if not os.path.exists(build_dir):
+                os.makedirs(build_dir, exist_ok=True)
+                warn(f"Created '{build_dir}' directory to store compilation files for the kernel.", UserWarning)
 
 
             # load() is lazy and will not re-compile if the .cu and .cpp have not changed, even though we changed the .cuh file above
-            # so change the timestamp of the .cu to force recompilation
+            # so touch the .cpp to force recompilation
             cpp_path = path + ".cpp"
-            # Read the current content of the file.
-            with open(cpp_path, "r") as f:
-                content = f.read()
-
-            # Define a dummy comment that you will add.
-            dummy_comment = "\n// Force rebuild dummy comment\n"
-
-            # Check if the dummy comment is already present.
-            # You can design this toggle mechanism in a couple of ways:
-            if "// Force rebuild dummy comment" in content:
-                # Option 1: Remove the dummy comment if already present.
-                new_content = content.replace(dummy_comment, "")
-            else:
-                # Option 2: Append the dummy comment to force a rebuild.
-                new_content = content + dummy_comment
-
-            # Write back the modified content.
-            with open(cpp_path, "w") as f:
-                f.write(new_content)
+            os.utime(cpp_path, None)
 
             kernel = load(
                 name="kernel",
                 sources=[path + ".cpp", path + ".cu"],
                 verbose=True,
                 extra_cflags=["-g"],
-                build_directory="build/",
+                build_directory=build_dir,
             )
             ksmm_compiled_kernel[name] = kernel
 

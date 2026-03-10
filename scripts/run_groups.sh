@@ -2,9 +2,17 @@
 set -euo pipefail
 mkdir -p results
 
-echo "=== Group 1: Single Factor ==="
-python scripts/profile_ksmm.py group1 \
-    --output results/group1.csv 
+
+
+python scripts/profile_ksmm.py group1 --num_gpus 8 --output results/group1_multigpu_nocuda.csv  --triton_only
+
+
+# python scripts/profile_ksmm.py group2 --num_gpus 8 --output results/group2_multigpu.csv 
+
+
+# echo "=== Group 1: Single Factor ==="
+# python scripts/profile_ksmm.py group1 \
+#     --output results/group1.csv 
 
 # echo ""
 # echo "=== Group 2: Butterfly Chain ==="

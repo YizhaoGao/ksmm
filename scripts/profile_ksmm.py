@@ -16,6 +16,9 @@ Usage:
     # Group 1 – single factor
     python scripts/profile_ksmm.py group1 --output results/group1.csv --triton_only
 
+    # Group 1 – CUDA only
+    python scripts/profile_ksmm.py group1 --output results/group1.csv --cuda_only
+
     # Group 2 – butterfly chain
     python scripts/profile_ksmm.py group2 --output results/group2.csv --triton_only
 
@@ -159,6 +162,73 @@ def run_parallel(worker_func, configs, args, fieldnames):
     print(f"\nResults saved to {args.output}  ({len(all_rows)} rows)")
 
 
+# ── Auto-restart wrapper ─────────────────────────────────────────────────────
+def _run_worker_with_restart(worker_func, configs, args, output_file):
+    """
+    Run worker in an isolated subprocess.  If it exits with code 1
+    (CUDA context irrecoverably corrupted), spawn a fresh process
+    with --resume so it picks up from the partial CSV.
+    """
+    ctx = mp.get_context('spawn')
+    max_restarts = 50
+
+    for attempt in range(max_restarts):
+        if attempt > 0:
+            args.resume = True
+            print(f"\n{'='*60}")
+            print(f"  Auto-restart #{attempt}: spawning fresh process to continue")
+            print(f"{'='*60}\n")
+
+        p = ctx.Process(target=worker_func, args=(0, configs, args, output_file))
+        p.start()
+        p.join()
+
+        if p.exitcode == 0:
+            return  # Worker completed normally
+
+        print(f"\n  Worker exited with code {p.exitcode}")
+
+        if not os.path.exists(output_file):
+            print("  No partial results found. Cannot auto-restart.")
+            sys.exit(1)
+
+    print(f"  Reached max auto-restarts ({max_restarts}). Partial results in {output_file}")
+
+
+# ── Resume helper ────────────────────────────────────────────────────────────
+def _load_resume_state(output_file, key_fields, error_field="cuda_error"):
+    """
+    Load existing CSV results for --resume support.
+    Returns (existing_rows, completed_keys, crashed_cuda_patterns).
+      - existing_rows: list of dicts from the CSV
+      - completed_keys: set of tuples identifying already-profiled configs
+      - crashed_cuda_patterns: set of (a,b,c,d) string-tuples that caused illegal memory access
+    """
+    existing_rows = []
+    completed_keys = set()
+    crashed_cuda_patterns = set()
+
+    if not os.path.exists(output_file):
+        return existing_rows, completed_keys, crashed_cuda_patterns
+
+    try:
+        with open(output_file, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                existing_rows.append(row)
+                key = tuple(row.get(k, "") for k in key_fields)
+                completed_keys.add(key)
+                # Track (a,b,c,d) patterns that crashed
+                err = row.get(error_field, "")
+                if "illegal memory access" in err or "CUDA context corrupted" in err:
+                    pat = (row.get("a", ""), row.get("b", ""), row.get("c", ""), row.get("d", ""))
+                    crashed_cuda_patterns.add(pat)
+    except Exception as e:
+        print(f"  Warning: Could not read existing results from {output_file}: {e}")
+
+    return existing_rows, completed_keys, crashed_cuda_patterns
+
+
 # ── Sweep (original main) ───────────────────────────────────────────────────
 def _sweep_fieldnames(args):
     fields = [
@@ -178,9 +248,36 @@ def _sweep_worker(rank, configs, args, output_file):
     total = len(configs)
     fieldnames = _sweep_fieldnames(args)
     rows = []
+    cuda_context_dead = False
+    crashed_cuda_patterns = set()
+
+    # Resume support
+    completed_keys = set()
+    if getattr(args, 'resume', False) and os.path.exists(output_file):
+        key_fields = ["a", "b", "c", "d", "batch_size"]
+        rows, completed_keys, crashed_cuda_patterns = _load_resume_state(
+            output_file, key_fields, error_field="cuda_error",
+        )
+        print(f"  Resuming: {len(rows)} existing results, "
+              f"{len(crashed_cuda_patterns)} crashed patterns to skip")
+
+    def _save_partial(rows, output_file, fieldnames):
+        """Write whatever results we have so far."""
+        os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"  Partial results saved to {output_file}  ({len(rows)} rows)")
 
     for idx, (a, b, c, d, batch_size) in enumerate(configs, 1):
         pattern = (a, b, c, d)
+
+        # Resume: skip already-profiled configs
+        config_key = tuple(str(v) for v in (a, b, c, d, batch_size))
+        if config_key in completed_keys:
+            continue
+
         dim_in = a * c * d
         dim_out = a * b * d
 
@@ -197,81 +294,119 @@ def _sweep_worker(rank, configs, args, output_file):
         )
 
         # ── Create random input ──────────────────────────────────────────
-        if args.bs_last:
-            x = torch.randn(dim_in, batch_size, dtype=dtype, device=device)
-        else:
-            x = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+        try:
+            if args.bs_last:
+                x = torch.randn(dim_in, batch_size, dtype=dtype, device=device)
+            else:
+                x = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+        except Exception as e:
+            err_msg = str(e)
+            if "illegal memory access" in err_msg or "CUDA" in err_msg:
+                print(f"  FATAL: CUDA context corrupted, cannot allocate tensors.")
+                row["cuda_error"] = "CUDA context corrupted"
+                rows.append(row)
+                _save_partial(rows, output_file, fieldnames)
+                sys.exit(1)
+            raise
 
         # ── 1. CUDA kernel ───────────────────────────────────────────────
-        if not args.triton_only:
-            try:
-                from ksmm_py.layer.kronecker_sparse.interface import KSLinear
+        if not args.triton_only and not cuda_context_dead:
+            pattern_key = tuple(str(v) for v in (a, b, c, d))
+            if pattern_key in crashed_cuda_patterns:
+                row["cuda_error"] = "skipped (pattern previously crashed)"
+                print(f"  CUDA:   SKIP (pattern previously crashed)")
+            else:
+                try:
+                    from ksmm_py.layer.kronecker_sparse.interface import KSLinear
 
-                ksl = KSLinear(
-                    patterns=[pattern],
-                    weights=None,
-                    algo="kernel",
-                    dtype=dtype,
-                    bs_last=args.bs_last,
-                    bias=False,
-                    device=device,
-                )
-                _ = ksl(x)
-                torch.cuda.synchronize()
+                    ksl = KSLinear(
+                        patterns=[pattern],
+                        weights=None,
+                        algo="kernel",
+                        dtype=dtype,
+                        bs_last=args.bs_last,
+                        bias=False,
+                        device=device,
+                    )
+                    _ = ksl(x)
+                    torch.cuda.synchronize()
 
-                cuda_ms = benchmark(
-                    cuda_forward, (ksl, x),
-                    warmup=args.warmup, iters=args.iters,
-                )
-                row["cuda_ms"] = f"{cuda_ms:.6f}"
-                print(f"  CUDA:   {cuda_ms:.4f} ms")
-            except Exception as e:
-                short = str(e).split("\n")[0][:120]
-                row["cuda_error"] = short
-                print(f"  CUDA:   SKIP ({short})")
+                    cuda_ms = benchmark(
+                        cuda_forward, (ksl, x),
+                        warmup=args.warmup, iters=args.iters,
+                    )
+                    row["cuda_ms"] = f"{cuda_ms:.6f}"
+                    print(f"  CUDA:   {cuda_ms:.4f} ms")
+                except Exception as e:
+                    short = str(e).split("\n")[0][:120]
+                    row["cuda_error"] = short
+                    print(f"  CUDA:   SKIP ({short})")
+                    if "illegal memory access" in str(e):
+                        crashed_cuda_patterns.add(pattern_key)
+                        print("  WARNING: Illegal memory access. Pattern added to skip list.")
+                        print("  Attempting CUDA recovery...")
+                        try:
+                            torch.cuda.synchronize()
+                        except Exception:
+                            pass
+                        try:
+                            _test = torch.randn(1, device=device)
+                            del _test
+                            print("  CUDA context recovered. Continuing with remaining patterns.")
+                        except Exception:
+                            cuda_context_dead = True
+                            print("  FATAL: CUDA context irrecoverably corrupted.")
+                            rows.append(row)
+                            _save_partial(rows, output_file, fieldnames)
+                            sys.exit(1)
+        elif cuda_context_dead and not args.triton_only:
+            row["cuda_error"] = "skipped (CUDA context dead)"
+            print(f"  CUDA:   SKIP (CUDA context irrecoverably corrupted)")
 
         # ── 2. BMM ───────────────────────────────────────────────────────
-        try:
-            scaling = 1.0 / math.sqrt(c)
-            w_kron = torch.empty(a * d, b, c, dtype=dtype, device=device).uniform_(
-                -scaling, scaling
-            )
-            layout = "BSL" if args.bs_last else "BSF"
-            _ = bmm_forward(x, w_kron, pattern, layout=layout)
-            torch.cuda.synchronize()
+        if not args.cuda_only:
+            try:
+                scaling = 1.0 / math.sqrt(c)
+                w_kron = torch.empty(a * d, b, c, dtype=dtype, device=device).uniform_(
+                    -scaling, scaling
+                )
+                layout = "BSL" if args.bs_last else "BSF"
+                _ = bmm_forward(x, w_kron, pattern, layout=layout)
+                torch.cuda.synchronize()
 
-            bmm_ms = benchmark(
-                bmm_forward, (x, w_kron, pattern, layout),
-                warmup=args.warmup, iters=args.iters,
-            )
-            row["bmm_ms"] = f"{bmm_ms:.6f}"
-            print(f"  BMM:    {bmm_ms:.4f} ms")
-        except Exception as e:
-            short = str(e).split("\n")[0][:120]
-            row["bmm_ms"] = ""
-            print(f"  BMM:    SKIP ({short})")
+                bmm_ms = benchmark(
+                    bmm_forward, (x, w_kron, pattern, layout),
+                    warmup=args.warmup, iters=args.iters,
+                )
+                row["bmm_ms"] = f"{bmm_ms:.6f}"
+                print(f"  BMM:    {bmm_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                row["bmm_ms"] = ""
+                print(f"  BMM:    SKIP ({short})")
 
         # ── 3. Triton kernel ─────────────────────────────────────────────
-        try:
-            scaling = 1.0 / math.sqrt(c)
-            K_bmm = torch.empty(a * d, c, b, dtype=dtype, device=device).uniform_(
-                -scaling, scaling
-            )
+        if not args.cuda_only:
+            try:
+                scaling = 1.0 / math.sqrt(c)
+                K_bmm = torch.empty(a * d, c, b, dtype=dtype, device=device).uniform_(
+                    -scaling, scaling
+                )
 
-            layout = "BSL" if args.bs_last else "BSF"
-            _ = triton_forward(x, K_bmm, pattern, layout=layout)
-            torch.cuda.synchronize()
+                layout = "BSL" if args.bs_last else "BSF"
+                _ = triton_forward(x, K_bmm, pattern, layout=layout)
+                torch.cuda.synchronize()
 
-            triton_ms = benchmark(
-                triton_forward, (x, K_bmm, pattern, layout),
-                warmup=args.warmup, iters=args.iters,
-            )
-            row["triton_ms"] = f"{triton_ms:.6f}"
-            print(f"  Triton: {triton_ms:.4f} ms")
-        except Exception as e:
-            short = str(e).split("\n")[0][:120]
-            row["triton_ms"] = ""
-            print(f"  Triton: SKIP ({short})")
+                triton_ms = benchmark(
+                    triton_forward, (x, K_bmm, pattern, layout),
+                    warmup=args.warmup, iters=args.iters,
+                )
+                row["triton_ms"] = f"{triton_ms:.6f}"
+                print(f"  Triton: {triton_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                row["triton_ms"] = ""
+                print(f"  Triton: SKIP ({short})")
 
         rows.append(row)
         print()
@@ -302,8 +437,8 @@ def run_sweep(args):
         run_parallel(_sweep_worker, configs, args, fieldnames)
         return
 
-    # Single-GPU path
-    _sweep_worker(0, configs, args, args.output)
+    # Single-GPU path — run in subprocess for auto-restart on CUDA crash
+    _run_worker_with_restart(_sweep_worker, configs, args, args.output)
 
     # Print summary table
     print()
@@ -341,6 +476,27 @@ def _group1_worker(rank, configs, args, output_file):
     rows = []
     total = len(configs) * len(batch_sizes)
     run_idx = 0
+    cuda_context_dead = False
+    crashed_cuda_patterns = set()
+
+    # Resume support
+    completed_keys = set()
+    if getattr(args, 'resume', False) and os.path.exists(output_file):
+        key_fields = ["b", "c", "M", "N", "a", "d", "batch_size"]
+        rows, completed_keys, crashed_cuda_patterns = _load_resume_state(
+            output_file, key_fields, error_field="cuda_error",
+        )
+        print(f"  Resuming: {len(rows)} existing results, "
+              f"{len(crashed_cuda_patterns)} crashed patterns to skip")
+
+    def _save_partial(rows, output_file, fieldnames):
+        """Write whatever results we have so far."""
+        os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"  Partial results saved to {output_file}  ({len(rows)} rows)")
 
     for b, c, M, N, a, d in configs:
         pattern = (a, b, c, d)
@@ -349,6 +505,12 @@ def _group1_worker(rank, configs, args, output_file):
 
         for batch_size in batch_sizes:
             run_idx += 1
+
+            # Resume: skip already-profiled configs
+            config_key = tuple(str(v) for v in (b, c, M, N, a, d, batch_size))
+            if config_key in completed_keys:
+                continue
+
             tag = f"[GPU {rank}] [{run_idx}/{total}] (a={a},b={b},c={c},d={d}) M={M} N={N} BS={batch_size}"
             print(tag)
 
@@ -358,64 +520,103 @@ def _group1_worker(rank, configs, args, output_file):
                 triton_ms="", bmm_ms="", cuda_ms="", cuda_error="",
             )
 
-            x = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+            # Allocate input tensor — fails if CUDA context is corrupted
+            try:
+                x = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+            except Exception as e:
+                err_msg = str(e)
+                if "illegal memory access" in err_msg or "CUDA" in err_msg:
+                    print(f"  FATAL: CUDA context corrupted, cannot allocate tensors.")
+                    row["cuda_error"] = "CUDA context corrupted"
+                    rows.append(row)
+                    _save_partial(rows, output_file, fieldnames)
+                    sys.exit(1)
+                raise
 
             # CUDA
-            if not args.triton_only:
-                try:
-                    from ksmm_py.layer.kronecker_sparse.interface import KSLinear
-                    ksl = KSLinear(
-                        patterns=[pattern], weights=None, algo="kernel",
-                        dtype=dtype, bs_last=False, bias=False, device=device,
-                    )
-                    _ = ksl(x)
-                    torch.cuda.synchronize()
-                    cuda_ms = benchmark(cuda_forward, (ksl, x),
-                                        warmup=args.warmup, iters=args.iters)
-                    row["cuda_ms"] = f"{cuda_ms:.6f}"
-                    print(f"  CUDA:   {cuda_ms:.4f} ms")
-                except Exception as e:
-                    short = str(e).split("\n")[0][:120]
-                    row["cuda_error"] = short
-                    print(f"  CUDA:   SKIP ({short})")
+            if not args.triton_only and not cuda_context_dead:
+                pattern_key = tuple(str(v) for v in (a, b, c, d))
+                if pattern_key in crashed_cuda_patterns:
+                    row["cuda_error"] = "skipped (pattern previously crashed)"
+                    print(f"  CUDA:   SKIP (pattern previously crashed)")
+                else:
+                    try:
+                        from ksmm_py.layer.kronecker_sparse.interface import KSLinear
+                        ksl = KSLinear(
+                            patterns=[pattern], weights=None, algo="kernel",
+                            dtype=dtype, bs_last=False, bias=False, device=device,
+                        )
+                        _ = ksl(x)
+                        torch.cuda.synchronize()
+                        cuda_ms = benchmark(cuda_forward, (ksl, x),
+                                            warmup=args.warmup, iters=args.iters)
+                        row["cuda_ms"] = f"{cuda_ms:.6f}"
+                        print(f"  CUDA:   {cuda_ms:.4f} ms")
+                    except Exception as e:
+                        short = str(e).split("\n")[0][:120]
+                        row["cuda_error"] = short
+                        print(f"  CUDA:   SKIP ({short})")
+                        if "illegal memory access" in str(e):
+                            crashed_cuda_patterns.add(pattern_key)
+                            print("  WARNING: Illegal memory access. Pattern added to skip list.")
+                            print("  Attempting CUDA recovery...")
+                            try:
+                                torch.cuda.synchronize()
+                            except Exception:
+                                pass
+                            try:
+                                _test = torch.randn(1, device=device)
+                                del _test
+                                print("  CUDA context recovered. Continuing with remaining patterns.")
+                            except Exception:
+                                cuda_context_dead = True
+                                print("  FATAL: CUDA context irrecoverably corrupted.")
+                                rows.append(row)
+                                _save_partial(rows, output_file, fieldnames)
+                                sys.exit(1)
+            elif cuda_context_dead and not args.triton_only:
+                row["cuda_error"] = "skipped (CUDA context dead)"
+                print(f"  CUDA:   SKIP (CUDA context irrecoverably corrupted)")
 
             # BMM
-            try:
-                scaling = 1.0 / math.sqrt(c)
-                w_kron = torch.empty(a * d, b, c, dtype=dtype, device=device).uniform_(
-                    -scaling, scaling
-                )
-                _ = bmm_forward(x, w_kron, pattern, layout=layout)
-                torch.cuda.synchronize()
+            if not args.cuda_only:
+                try:
+                    scaling = 1.0 / math.sqrt(c)
+                    w_kron = torch.empty(a * d, b, c, dtype=dtype, device=device).uniform_(
+                        -scaling, scaling
+                    )
+                    _ = bmm_forward(x, w_kron, pattern, layout=layout)
+                    torch.cuda.synchronize()
 
-                bmm_ms = benchmark(
-                    bmm_forward, (x, w_kron, pattern, layout),
-                    warmup=args.warmup, iters=args.iters,
-                )
-                row["bmm_ms"] = f"{bmm_ms:.6f}"
-                print(f"  BMM:    {bmm_ms:.4f} ms")
-            except Exception as e:
-                short = str(e).split("\n")[0][:120]
-                print(f"  BMM:    SKIP ({short})")
+                    bmm_ms = benchmark(
+                        bmm_forward, (x, w_kron, pattern, layout),
+                        warmup=args.warmup, iters=args.iters,
+                    )
+                    row["bmm_ms"] = f"{bmm_ms:.6f}"
+                    print(f"  BMM:    {bmm_ms:.4f} ms")
+                except Exception as e:
+                    short = str(e).split("\n")[0][:120]
+                    print(f"  BMM:    SKIP ({short})")
 
             # Triton
-            try:
-                scaling = 1.0 / math.sqrt(c)
-                K_bmm = torch.empty(a * d, c, b, dtype=dtype, device=device).uniform_(
-                    -scaling, scaling
-                )
-                _ = triton_forward(x, K_bmm, pattern, layout=layout)
-                torch.cuda.synchronize()
+            if not args.cuda_only:
+                try:
+                    scaling = 1.0 / math.sqrt(c)
+                    K_bmm = torch.empty(a * d, c, b, dtype=dtype, device=device).uniform_(
+                        -scaling, scaling
+                    )
+                    _ = triton_forward(x, K_bmm, pattern, layout=layout)
+                    torch.cuda.synchronize()
 
-                triton_ms = benchmark(
-                    triton_forward, (x, K_bmm, pattern, layout),
-                    warmup=args.warmup, iters=args.iters,
-                )
-                row["triton_ms"] = f"{triton_ms:.6f}"
-                print(f"  Triton: {triton_ms:.4f} ms")
-            except Exception as e:
-                short = str(e).split("\n")[0][:120]
-                print(f"  Triton: SKIP ({short})")
+                    triton_ms = benchmark(
+                        triton_forward, (x, K_bmm, pattern, layout),
+                        warmup=args.warmup, iters=args.iters,
+                    )
+                    row["triton_ms"] = f"{triton_ms:.6f}"
+                    print(f"  Triton: {triton_ms:.4f} ms")
+                except Exception as e:
+                    short = str(e).split("\n")[0][:120]
+                    print(f"  Triton: SKIP ({short})")
 
             rows.append(row)
 
@@ -465,8 +666,8 @@ def run_group1(args):
         run_parallel(_group1_worker, configs, args, fieldnames)
         return
 
-    # Single-GPU path
-    _group1_worker(0, configs, args, args.output)
+    # Single-GPU path — run in subprocess for auto-restart on CUDA crash
+    _run_worker_with_restart(_group1_worker, configs, args, args.output)
     print(f"\nResults saved to {args.output}")
 
 
@@ -527,83 +728,91 @@ def _group2_worker(rank, configs, args, output_file):
 
         # Profile each stage individually — Triton
         triton_stage_times = []
-        for si, ((a, b, c, d), (pattern, K_bmm)) in enumerate(zip(stages, triton_stage_kernels)):
-            try:
-                dim_in = a * c * d
-                x_single = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
-                _ = triton_forward(x_single, K_bmm, pattern, layout=layout)
-                torch.cuda.synchronize()
+        if not args.cuda_only:
+            for si, ((a, b, c, d), (pattern, K_bmm)) in enumerate(zip(stages, triton_stage_kernels)):
+                try:
+                    dim_in = a * c * d
+                    x_single = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+                    _ = triton_forward(x_single, K_bmm, pattern, layout=layout)
+                    torch.cuda.synchronize()
 
-                ms = benchmark(
-                    triton_forward, (x_single, K_bmm, pattern, layout),
-                    warmup=args.warmup, iters=args.iters,
-                )
-                triton_stage_times.append(ms)
-                print(f"    stage {si} triton: {ms:.4f} ms")
-            except Exception as e:
-                triton_stage_times.append(None)
-                short = str(e).split("\n")[0][:120]
-                print(f"    stage {si} triton: SKIP ({short})")
+                    ms = benchmark(
+                        triton_forward, (x_single, K_bmm, pattern, layout),
+                        warmup=args.warmup, iters=args.iters,
+                    )
+                    triton_stage_times.append(ms)
+                    print(f"    stage {si} triton: {ms:.4f} ms")
+                except Exception as e:
+                    triton_stage_times.append(None)
+                    short = str(e).split("\n")[0][:120]
+                    print(f"    stage {si} triton: SKIP ({short})")
+        else:
+            triton_stage_times = [None] * len(stages)
 
         # Profile each stage individually — BMM
         bmm_stage_times = []
-        for si, ((a, b, c, d), (pattern, w_kron)) in enumerate(zip(stages, bmm_stage_kernels)):
-            try:
-                dim_in = a * c * d
-                x_single = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
-                _ = bmm_forward(x_single, w_kron, pattern, layout=layout)
-                torch.cuda.synchronize()
+        if not args.cuda_only:
+            for si, ((a, b, c, d), (pattern, w_kron)) in enumerate(zip(stages, bmm_stage_kernels)):
+                try:
+                    dim_in = a * c * d
+                    x_single = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+                    _ = bmm_forward(x_single, w_kron, pattern, layout=layout)
+                    torch.cuda.synchronize()
 
-                ms = benchmark(
-                    bmm_forward, (x_single, w_kron, pattern, layout),
-                    warmup=args.warmup, iters=args.iters,
-                )
-                bmm_stage_times.append(ms)
-                print(f"    stage {si} bmm:    {ms:.4f} ms")
-            except Exception as e:
-                bmm_stage_times.append(None)
-                short = str(e).split("\n")[0][:120]
-                print(f"    stage {si} bmm:    SKIP ({short})")
+                    ms = benchmark(
+                        bmm_forward, (x_single, w_kron, pattern, layout),
+                        warmup=args.warmup, iters=args.iters,
+                    )
+                    bmm_stage_times.append(ms)
+                    print(f"    stage {si} bmm:    {ms:.4f} ms")
+                except Exception as e:
+                    bmm_stage_times.append(None)
+                    short = str(e).split("\n")[0][:120]
+                    print(f"    stage {si} bmm:    SKIP ({short})")
+        else:
+            bmm_stage_times = [None] * len(stages)
 
         # Profile the full chain end-to-end — Triton
-        def triton_chain_forward():
-            x = torch.randn(batch_size, N, dtype=dtype, device=device)
-            for pattern, K_bmm in triton_stage_kernels:
-                x = triton_forward(x, K_bmm, pattern, layout=layout)
-            return x
+        triton_chain_ms = None
+        if not args.cuda_only:
+            def triton_chain_forward():
+                x = torch.randn(batch_size, N, dtype=dtype, device=device)
+                for pattern, K_bmm in triton_stage_kernels:
+                    x = triton_forward(x, K_bmm, pattern, layout=layout)
+                return x
 
-        try:
-            _ = triton_chain_forward()
-            torch.cuda.synchronize()
-            triton_chain_ms = benchmark(
-                lambda: triton_chain_forward(), (),
-                warmup=args.warmup, iters=args.iters,
-            )
-            print(f"    chain triton total: {triton_chain_ms:.4f} ms")
-        except Exception as e:
-            triton_chain_ms = None
-            short = str(e).split("\n")[0][:120]
-            print(f"    chain triton total: SKIP ({short})")
+            try:
+                _ = triton_chain_forward()
+                torch.cuda.synchronize()
+                triton_chain_ms = benchmark(
+                    lambda: triton_chain_forward(), (),
+                    warmup=args.warmup, iters=args.iters,
+                )
+                print(f"    chain triton total: {triton_chain_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                print(f"    chain triton total: SKIP ({short})")
 
         # Profile the full chain end-to-end — BMM
-        def bmm_chain_forward():
-            x = torch.randn(batch_size, N, dtype=dtype, device=device)
-            for pattern, w_kron in bmm_stage_kernels:
-                x = bmm_forward(x, w_kron, pattern, layout=layout)
-            return x
+        bmm_chain_ms = None
+        if not args.cuda_only:
+            def bmm_chain_forward():
+                x = torch.randn(batch_size, N, dtype=dtype, device=device)
+                for pattern, w_kron in bmm_stage_kernels:
+                    x = bmm_forward(x, w_kron, pattern, layout=layout)
+                return x
 
-        try:
-            _ = bmm_chain_forward()
-            torch.cuda.synchronize()
-            bmm_chain_ms = benchmark(
-                lambda: bmm_chain_forward(), (),
-                warmup=args.warmup, iters=args.iters,
-            )
-            print(f"    chain bmm total:    {bmm_chain_ms:.4f} ms")
-        except Exception as e:
-            bmm_chain_ms = None
-            short = str(e).split("\n")[0][:120]
-            print(f"    chain bmm total:    SKIP ({short})")
+            try:
+                _ = bmm_chain_forward()
+                torch.cuda.synchronize()
+                bmm_chain_ms = benchmark(
+                    lambda: bmm_chain_forward(), (),
+                    warmup=args.warmup, iters=args.iters,
+                )
+                print(f"    chain bmm total:    {bmm_chain_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                print(f"    chain bmm total:    SKIP ({short})")
 
         # Write one row per stage
         for si, (a, b, c, d) in enumerate(stages):
@@ -670,8 +879,13 @@ def main():
         p.add_argument("--output", type=str, default="results/profile.csv")
         p.add_argument("--triton_only", action="store_true",
                         help="Only profile Triton and BMM, skip CUDA")
+        p.add_argument("--cuda_only", action="store_true",
+                        help="Only profile CUDA kernel, skip Triton and BMM")
         p.add_argument("--num_gpus", type=int, default=1,
                         help="Number of GPUs for parallel profiling (default: 1)")
+        p.add_argument("--resume", action="store_true",
+                        help="Resume from existing output, skipping completed configs "
+                             "and patterns that previously crashed")
 
     # ── sweep (original) ─────────────────────────────────────────────────
     sweep_parser = subparsers.add_parser("sweep", help="Original parameter sweep")
@@ -695,6 +909,10 @@ def main():
     add_common_args(group2_parser)
 
     args = parser.parse_args()
+
+    if hasattr(args, 'cuda_only') and hasattr(args, 'triton_only'):
+        if args.cuda_only and args.triton_only:
+            parser.error("--cuda_only and --triton_only are mutually exclusive")
 
     if args.command == "sweep":
         run_sweep(args)
