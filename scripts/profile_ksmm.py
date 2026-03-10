@@ -471,8 +471,7 @@ def _group1_worker(rank, configs, args, output_file):
     device = "cuda"
     layout = "BSF"
 
-    # batch_sizes = powers_of_2_range(2, 4096)
-    batch_sizes = [4096]
+    batch_sizes = args.batch_sizes
     fieldnames = _group1_fieldnames(args)
     rows = []
     total = len(configs) * len(batch_sizes)
@@ -637,7 +636,7 @@ def run_group1(args):
     b_values = powers_of_2_range(2, 64)
     c_values = powers_of_2_range(2, 64)
     MN_values = [512, 1024, 2048, 4096]
-    batch_sizes = powers_of_2_range(2, 4096)
+    batch_sizes = args.batch_sizes
 
     # Enumerate all valid configs
     configs = []
@@ -843,7 +842,7 @@ def run_group2(args):
     each stage individually plus the full chain end-to-end.
     """
     N_values = [512, 1024, 2048, 4096]
-    batch_sizes = powers_of_2_range(2, 4096)
+    batch_sizes = args.batch_sizes
 
     # Build (N, batch_size) configs
     configs = list(itertools.product(N_values, batch_sizes))
@@ -902,11 +901,17 @@ def main():
     # ── group1 ───────────────────────────────────────────────────────────
     group1_parser = subparsers.add_parser("group1",
         help="Single-factor profiling: sweep (a,d) for fixed (M,N,b,c)")
+    group1_parser.add_argument("--batch_sizes", type=int, nargs="+",
+                               default=None,
+                               help="Batch sizes to profile (default: powers of 2 from 2 to 4096)")
     add_common_args(group1_parser)
 
     # ── group2 ───────────────────────────────────────────────────────────
     group2_parser = subparsers.add_parser("group2",
         help="Butterfly-chain profiling: decompose N into stages")
+    group2_parser.add_argument("--batch_sizes", type=int, nargs="+",
+                               default=None,
+                               help="Batch sizes to profile (default: powers of 2 from 2 to 4096)")
     add_common_args(group2_parser)
 
     args = parser.parse_args()
@@ -914,6 +919,10 @@ def main():
     if hasattr(args, 'cuda_only') and hasattr(args, 'triton_only'):
         if args.cuda_only and args.triton_only:
             parser.error("--cuda_only and --triton_only are mutually exclusive")
+
+    # Default batch_sizes for group1/group2 if not specified
+    if hasattr(args, 'batch_sizes') and args.batch_sizes is None:
+        args.batch_sizes = powers_of_2_range(2, 4096)
 
     if args.command == "sweep":
         run_sweep(args)

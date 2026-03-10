@@ -1,0 +1,609 @@
+group,b,c,M,N,a,d,batch_size,triton_ms,bmm_ms,cuda_ms,cuda_error
+group1,2,2,512,512,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,512,512,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,1024,1024,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,1,1024,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,2,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,4,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,8,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,16,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,32,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,64,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,128,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,256,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,512,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,2048,2048,1024,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,1,2048,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,2,1024,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,4,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,8,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,16,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,32,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,64,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,128,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,256,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,512,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,1024,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,2,4096,4096,2048,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,512,1024,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,1024,2048,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,1,1024,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,2,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,4,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,8,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,16,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,32,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,64,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,128,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,256,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,512,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,4,2048,4096,1024,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,512,2048,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,8,1024,4096,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,2,16,512,4096,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,1024,512,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,2048,1024,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,1,1024,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,2,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,4,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,8,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,16,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,32,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,64,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,128,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,256,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,512,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,2,4096,2048,1024,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,512,512,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,1024,1024,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,2048,2048,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,1,1024,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,2,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,4,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,8,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,16,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,32,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,64,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,128,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,256,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,512,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,4,4096,4096,1024,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,512,1024,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,1024,2048,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,8,2048,4096,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,512,2048,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,16,1024,4096,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,4,32,512,4096,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,2048,512,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,2,4096,1024,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,1024,512,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,2048,1024,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,4,4096,2048,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,1,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,2,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,4,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,8,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,16,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,32,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,512,512,64,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,1024,1024,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,2048,2048,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,1,512,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,2,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,4,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,8,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,16,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,32,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,64,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,128,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,256,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,8,4096,4096,512,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,1,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,2,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,4,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,8,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,16,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,32,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,512,1024,64,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,1024,2048,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,16,2048,4096,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,1,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,2,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,4,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,8,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,16,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,32,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,512,2048,64,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,1,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,2,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,4,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,8,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,16,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,32,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,64,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,32,1024,4096,128,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,1,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,2,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,4,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,8,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,16,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,32,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,8,64,512,4096,64,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,1,256,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,2,128,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,4,64,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,8,32,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,16,16,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,32,8,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,64,4,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,128,2,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,2,4096,512,256,1,2048,,,,"ERROR: Could not find hyperparameters for the kernel instance corresponding to the target (batch_size, a, b, c, d, preci"
+group1,16,4,2048,512,1,128,2048,,,0.118392,
+group1,16,4,2048,512,2,64,2048,,,0.118699,
+group1,16,4,2048,512,4,32,2048,,,0.121368,
+group1,16,4,2048,512,8,16,2048,,,0.121217,
+group1,16,4,2048,512,16,8,2048,,,0.117005,
+group1,16,4,2048,512,32,4,2048,,,0.117180,
+group1,16,4,2048,512,64,2,2048,,,0.116004,
+group1,16,4,2048,512,128,1,2048,,,0.116527,
+group1,16,4,4096,1024,1,256,2048,,,0.216788,
+group1,16,4,4096,1024,2,128,2048,,,0.221749,
+group1,16,4,4096,1024,4,64,2048,,,0.227607,
+group1,16,4,4096,1024,8,32,2048,,,0.232352,
+group1,16,4,4096,1024,16,16,2048,,,0.232112,
+group1,16,4,4096,1024,32,8,2048,,,0.164011,
+group1,16,4,4096,1024,64,4,2048,,,0.115584,
+group1,16,4,4096,1024,128,2,2048,,,0.115196,
+group1,16,4,4096,1024,256,1,2048,,,0.115232,
+group1,16,8,1024,512,1,64,2048,,,0.115357,
+group1,16,8,1024,512,2,32,2048,,,0.114508,
+group1,16,8,1024,512,4,16,2048,,,0.116003,
+group1,16,8,1024,512,8,8,2048,,,0.114942,
+group1,16,8,1024,512,16,4,2048,,,0.114409,
+group1,16,8,1024,512,32,2,2048,,,0.114011,
+group1,16,8,1024,512,64,1,2048,,,0.114111,
+group1,16,8,2048,1024,1,128,2048,,,0.122344,
+group1,16,8,2048,1024,2,64,2048,,,0.130479,
+group1,16,8,2048,1024,4,32,2048,,,0.133153,
+group1,16,8,2048,1024,8,16,2048,,,0.131984,
+group1,16,8,2048,1024,16,8,2048,,,0.112927,
+group1,16,8,2048,1024,32,4,2048,,,0.112443,
+group1,16,8,2048,1024,64,2,2048,,,0.112139,
+group1,16,8,2048,1024,128,1,2048,,,0.112659,
+group1,16,8,4096,2048,1,256,2048,,,0.240405,
+group1,16,8,4096,2048,2,128,2048,,,0.250587,
+group1,16,8,4096,2048,4,64,2048,,,0.251849,
+group1,16,8,4096,2048,8,32,2048,,,0.256851,
+group1,16,8,4096,2048,16,16,2048,,,0.254661,
+group1,16,8,4096,2048,32,8,2048,,,0.196633,
+group1,16,8,4096,2048,64,4,2048,,,0.151239,
+group1,16,8,4096,2048,128,2,2048,,,0.110458,
+group1,16,8,4096,2048,256,1,2048,,,0.110951,
+group1,16,16,512,512,1,32,2048,,,0.110647,
+group1,16,16,512,512,2,16,2048,,,0.109953,
+group1,16,16,512,512,4,8,2048,,,0.109829,
+group1,16,16,512,512,8,4,2048,,,0.111856,
+group1,16,16,512,512,16,2,2048,,,0.109392,
+group1,16,16,512,512,32,1,2048,,,0.109178,
+group1,16,16,1024,1024,1,64,2048,,,0.109196,
+group1,16,16,1024,1024,2,32,2048,,,0.109024,
+group1,16,16,1024,1024,4,16,2048,,,0.108635,
+group1,16,16,1024,1024,8,8,2048,,,0.108833,
+group1,16,16,1024,1024,16,4,2048,,,0.108149,
+group1,16,16,1024,1024,32,2,2048,,,0.108138,
+group1,16,16,1024,1024,64,1,2048,,,0.107983,
+group1,16,16,2048,2048,1,128,2048,,,0.159304,
+group1,16,16,2048,2048,2,64,2048,,,0.163548,
+group1,16,16,2048,2048,4,32,2048,,,0.166901,
+group1,16,16,2048,2048,8,16,2048,,,0.165977,
+group1,16,16,2048,2048,16,8,2048,,,0.135358,
+group1,16,16,2048,2048,32,4,2048,,,0.113545,
+group1,16,16,2048,2048,64,2,2048,,,0.106723,
+group1,16,16,2048,2048,128,1,2048,,,0.106063,
+group1,16,16,4096,4096,1,256,2048,,,0.322086,
+group1,16,16,4096,4096,2,128,2048,,,0.322537,
+group1,16,16,4096,4096,4,64,2048,,,0.326551,
+group1,16,16,4096,4096,8,32,2048,,,0.332614,
+group1,16,16,4096,4096,16,16,2048,,,0.327395,
+group1,16,16,4096,4096,32,8,2048,,,0.267021,
+group1,16,16,4096,4096,64,4,2048,,,0.220584,
+group1,16,16,4096,4096,128,2,2048,,,0.172595,
+group1,16,16,4096,4096,256,1,2048,,,0.154850,
+group1,16,32,512,1024,1,32,2048,,,0.105200,
+group1,16,32,512,1024,2,16,2048,,,0.104963,
+group1,16,32,512,1024,4,8,2048,,,0.104382,
+group1,16,32,512,1024,8,4,2048,,,0.104759,
+group1,16,32,512,1024,16,2,2048,,,0.103952,
+group1,16,32,512,1024,32,1,2048,,,0.103828,
+group1,16,32,1024,2048,1,64,2048,,,0.107746,
+group1,16,32,1024,2048,2,32,2048,,,0.105275,
+group1,16,32,1024,2048,4,16,2048,,,0.104974,
+group1,16,32,1024,2048,8,8,2048,,,0.103317,
+group1,16,32,1024,2048,16,4,2048,,,0.103630,
+group1,16,32,1024,2048,32,2,2048,,,0.102810,
+group1,16,32,1024,2048,64,1,2048,,,0.102727,
+group1,16,32,2048,4096,1,128,2048,,,0.221871,
+group1,16,32,2048,4096,2,64,2048,,,0.226634,
+group1,16,32,2048,4096,4,32,2048,,,0.229592,
+group1,16,32,2048,4096,8,16,2048,,,0.228767,
+group1,16,32,2048,4096,16,8,2048,,,0.195104,
+group1,16,32,2048,4096,32,4,2048,,,0.168194,
+group1,16,32,2048,4096,64,2,2048,,,0.132388,
+group1,16,32,2048,4096,128,1,2048,,,0.123864,
+group1,16,64,512,2048,1,32,2048,,,0.102320,
+group1,16,64,512,2048,2,16,2048,,,0.102086,
+group1,16,64,512,2048,4,8,2048,,,0.101441,
+group1,16,64,512,2048,8,4,2048,,,0.101677,
+group1,16,64,512,2048,16,2,2048,,,0.101064,
+group1,16,64,512,2048,32,1,2048,,,0.101197,
+group1,16,64,1024,4096,1,64,2048,,,0.161345,
+group1,16,64,1024,4096,2,32,2048,,,0.160769,
+group1,16,64,1024,4096,4,16,2048,,,0.159089,
+group1,16,64,1024,4096,8,8,2048,,,0.138630,
+group1,16,64,1024,4096,16,4,2048,,,0.123289,
+group1,16,64,1024,4096,32,2,2048,,,0.108420,
+group1,16,64,1024,4096,64,1,2048,,,0.109252,
+group1,32,4,4096,512,1,128,2048,,,0.211720,
+group1,32,4,4096,512,2,64,2048,,,0.218633,
+group1,32,4,4096,512,4,32,2048,,,0.220237,
+group1,32,4,4096,512,8,16,2048,,,0.226648,
+group1,32,4,4096,512,16,8,2048,,,0.224623,
+group1,32,4,4096,512,32,4,2048,,,0.172803,
+group1,32,4,4096,512,64,2,2048,,,0.138398,
+group1,32,4,4096,512,128,1,2048,,,0.098082,
+group1,32,8,2048,512,1,64,2048,,,0.112264,
+group1,32,8,2048,512,2,32,2048,,,0.121074,
+group1,32,8,2048,512,4,16,2048,,,0.124368,
+group1,32,8,2048,512,8,8,2048,,,0.122224,
+group1,32,8,2048,512,16,4,2048,,,0.097223,
+group1,32,8,2048,512,32,2,2048,,,0.096532,
+group1,32,8,2048,512,64,1,2048,,,0.096591,
+group1,32,8,4096,1024,1,128,2048,,,0.224012,
+group1,32,8,4096,1024,2,64,2048,,,0.228648,
+group1,32,8,4096,1024,4,32,2048,,,0.231131,
+group1,32,8,4096,1024,8,16,2048,,,0.240683,
+group1,32,8,4096,1024,16,8,2048,,,0.239158,
+group1,32,8,4096,1024,32,4,2048,,,0.186218,
+group1,32,8,4096,1024,64,2,2048,,,0.148580,
+group1,32,8,4096,1024,128,1,2048,,,0.095261,
+group1,32,16,1024,512,1,32,2048,,,0.095725,
+group1,32,16,1024,512,2,16,2048,,,0.094860,
+group1,32,16,1024,512,4,8,2048,,,0.094618,
+group1,32,16,1024,512,8,4,2048,,,0.094601,
+group1,32,16,1024,512,16,2,2048,,,0.094488,
+group1,32,16,1024,512,32,1,2048,,,0.094240,
+group1,32,16,2048,1024,1,64,2048,,,0.125368,
+group1,32,16,2048,1024,2,32,2048,,,0.135517,
+group1,32,16,2048,1024,4,16,2048,,,0.139601,
+group1,32,16,2048,1024,8,8,2048,,,0.137600,
+group1,32,16,2048,1024,16,4,2048,,,0.108041,
+group1,32,16,2048,1024,32,2,2048,,,0.093196,
+group1,32,16,2048,1024,64,1,2048,,,0.093113,
+group1,32,16,4096,2048,1,128,2048,,,0.251506,
+group1,32,16,4096,2048,2,64,2048,,,0.255701,
+group1,32,16,4096,2048,4,32,2048,,,0.261063,
+group1,32,16,4096,2048,8,16,2048,,,0.273259,
+group1,32,16,4096,2048,16,8,2048,,,0.269910,
+group1,32,16,4096,2048,32,4,2048,,,0.216390,
+group1,32,16,4096,2048,64,2,2048,,,0.173849,
+group1,32,16,4096,2048,128,1,2048,,,0.121947,
+group1,32,32,512,512,1,16,2048,,,0.091851,
+group1,32,32,512,512,2,8,2048,,,0.091446,
+group1,32,32,512,512,4,4,2048,,,0.091095,
+group1,32,32,512,512,8,2,2048,,,0.090989,
+group1,32,32,512,512,16,1,2048,,,0.090931,
+group1,32,32,1024,1024,1,32,2048,,,0.094489,
+group1,32,32,1024,1024,2,16,2048,,,0.093317,
+group1,32,32,1024,1024,4,8,2048,,,0.090543,
+group1,32,32,1024,1024,8,4,2048,,,0.089976,
+group1,32,32,1024,1024,16,2,2048,,,0.090005,
+group1,32,32,1024,1024,32,1,2048,,,0.089637,
+group1,32,32,2048,2048,1,64,2048,,,0.177329,
+group1,32,32,2048,2048,2,32,2048,,,0.179867,
+group1,32,32,2048,2048,4,16,2048,,,0.182372,
+group1,32,32,2048,2048,8,8,2048,,,0.176815,
+group1,32,32,2048,2048,16,4,2048,,,0.144350,
+group1,32,32,2048,2048,32,2,2048,,,0.120105,
+group1,32,32,2048,2048,64,1,2048,,,0.096156,
+group1,32,32,4096,4096,1,128,2048,,,0.342596,
+group1,32,32,4096,4096,2,64,2048,,,0.343870,
+group1,32,32,4096,4096,4,32,2048,,,0.344246,
+group1,32,32,4096,4096,8,16,2048,,,0.347501,
+group1,32,32,4096,4096,16,8,2048,,,0.332091,
+group1,32,32,4096,4096,32,4,2048,,,0.269833,
+group1,32,32,4096,4096,64,2,2048,,,0.211155,
+group1,32,32,4096,4096,128,1,2048,,,0.164886,
+group1,32,64,512,1024,1,16,2048,,,0.087733,
+group1,32,64,512,1024,2,8,2048,,,0.087182,
+group1,32,64,512,1024,4,4,2048,,,0.086825,
+group1,32,64,512,1024,8,2,2048,,,0.087191,
+group1,32,64,512,1024,16,1,2048,,,0.086322,
+group1,32,64,1024,2048,1,32,2048,,,0.124635,
+group1,32,64,1024,2048,2,16,2048,,,0.121618,
+group1,32,64,1024,2048,4,8,2048,,,0.114891,
+group1,32,64,1024,2048,8,4,2048,,,0.096655,
+group1,32,64,1024,2048,16,2,2048,,,0.085514,
+group1,32,64,1024,2048,32,1,2048,,,0.085811,
+group1,32,64,2048,4096,1,64,2048,,,0.253368,
+group1,32,64,2048,4096,2,32,2048,,,0.254201,
+group1,32,64,2048,4096,4,16,2048,,,0.253050,
+group1,32,64,2048,4096,8,8,2048,,,0.242177,
+group1,32,64,2048,4096,16,4,2048,,,0.204465,
+group1,32,64,2048,4096,32,2,2048,,,0.171372,
+group1,32,64,2048,4096,64,1,2048,,,0.149529,
+group1,64,8,4096,512,1,64,2048,,,0.242828,
+group1,64,8,4096,512,2,32,2048,,,0.242528,
+group1,64,8,4096,512,4,16,2048,,,0.244535,
+group1,64,8,4096,512,8,8,2048,,,0.257703,
+group1,64,8,4096,512,16,4,2048,,,0.264249,
+group1,64,8,4096,512,32,2,2048,,,0.201001,
+group1,64,8,4096,512,64,1,2048,,,0.165542,
+group1,64,16,2048,512,1,32,2048,,,0.129563,
+group1,64,16,2048,512,2,16,2048,,,0.139112,
+group1,64,16,2048,512,4,8,2048,,,0.141454,
+group1,64,16,2048,512,8,4,2048,,,0.139697,
+group1,64,16,2048,512,16,2,2048,,,0.109499,
+group1,64,16,2048,512,32,1,2048,,,0.085531,
+group1,64,16,4096,1024,1,64,2048,,,0.258258,
+group1,64,16,4096,1024,2,32,2048,,,0.259088,
+group1,64,16,4096,1024,4,16,2048,,,0.260569,
+group1,64,16,4096,1024,8,8,2048,,,0.267597,
+group1,64,16,4096,1024,16,4,2048,,,0.264008,
+group1,64,16,4096,1024,32,2,2048,,,0.205600,
+group1,64,16,4096,1024,64,1,2048,,,0.160398,
+group1,64,32,1024,512,1,16,2048,,,0.105698,
+group1,64,32,1024,512,2,8,2048,,,0.101894,
+group1,64,32,1024,512,4,4,2048,,,0.100892,
+group1,64,32,1024,512,8,2,2048,,,0.080458,
+group1,64,32,1024,512,16,1,2048,,,0.079787,
+group1,64,32,2048,1024,1,32,2048,,,0.151173,
+group1,64,32,2048,1024,2,16,2048,,,0.158403,
+group1,64,32,2048,1024,4,8,2048,,,0.163730,
+group1,64,32,2048,1024,8,4,2048,,,0.163109,
+group1,64,32,2048,1024,16,2,2048,,,0.130098,
+group1,64,32,2048,1024,32,1,2048,,,0.106794,
+group1,64,32,4096,2048,1,64,2048,,,0.354958,
+group1,64,32,4096,2048,2,32,2048,,,0.338493,
+group1,64,32,4096,2048,4,16,2048,,,0.331978,
+group1,64,32,4096,2048,8,8,2048,,,0.334430,
+group1,64,32,4096,2048,16,4,2048,,,0.328509,
+group1,64,32,4096,2048,32,2,2048,,,0.264169,
+group1,64,32,4096,2048,64,1,2048,,,0.228462,
+group1,64,64,512,512,1,8,2048,,,0.079846,
+group1,64,64,512,512,2,4,2048,,,0.078261,
+group1,64,64,512,512,4,2,2048,,,0.078321,
+group1,64,64,512,512,8,1,2048,,,0.077347,
+group1,64,64,1024,1024,1,16,2048,,,0.131043,
+group1,64,64,1024,1024,2,8,2048,,,0.126555,
+group1,64,64,1024,1024,4,4,2048,,,0.124597,
+group1,64,64,1024,1024,8,2,2048,,,0.105589,
+group1,64,64,1024,1024,16,1,2048,,,0.101476,
+group1,64,64,2048,2048,1,32,2048,,,0.192291,
+group1,64,64,2048,2048,2,16,2048,,,0.198013,
+group1,64,64,2048,2048,4,8,2048,,,0.199621,
+group1,64,64,2048,2048,8,4,2048,,,0.197573,
+group1,64,64,2048,2048,16,2,2048,,,0.163145,
+group1,64,64,2048,2048,32,1,2048,,,0.130581,
+group1,64,64,4096,4096,1,64,2048,,,0.443419,
+group1,64,64,4096,4096,2,32,2048,,,0.425513,
+group1,64,64,4096,4096,4,16,2048,,,0.410287,
+group1,64,64,4096,4096,8,8,2048,,,0.413309,
+group1,64,64,4096,4096,16,4,2048,,,0.406411,
+group1,64,64,4096,4096,32,2,2048,,,0.343674,
+group1,64,64,4096,4096,64,1,2048,,,0.299437,
