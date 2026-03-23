@@ -6,6 +6,7 @@ Subcommands:
   sweep   – Original parameter sweep over (a, b, c, d) lists.
   group1  – Single-factor profiling: sweep (a, d) for fixed (M, N, b, c).
   group2  – Butterfly-chain profiling: decompose N into stages, profile chain.
+  group3  – K-factor chain profiling: general (b, c) decompositions.
 
 Usage:
     # Original sweep (default)
@@ -21,6 +22,9 @@ Usage:
 
     # Group 2 – butterfly chain
     python scripts/profile_ksmm.py group2 --output results/group2.csv --triton_only
+
+    # Group 3 – K-factor chain (general decomposition)
+    python scripts/profile_ksmm.py group3 --output results/group3.csv --triton_only
 
     # Multi-GPU (8 GPUs)
     python scripts/profile_ksmm.py group1 --num_gpus 8 --output results/group1.csv --triton_only
@@ -863,6 +867,309 @@ def run_group2(args):
     print(f"\nResults saved to {args.output}")
 
 
+# ── Group 3: K-Factor Chain (General Decomposition) ───────────────────────
+def _group3_fieldnames(args):
+    return [
+        "group", "b", "c", "M", "N", "K", "batch_size", "stage",
+        "a", "d", "dim_in", "dim_out",
+        "stage_triton_ms", "stage_bmm_ms",
+        "total_chain_triton_ms", "total_chain_bmm_ms",
+    ]
+
+
+def _group3_enumerate_configs():
+    """
+    Enumerate valid (b, c, M, N, K) combinations for K-factor chains.
+
+    Recursion condition: a K-factor chain where every factor shares the same
+    (b, c) satisfies M / N = (b / c)^K, i.e.  M * c^K = N * b^K.
+
+    For each stage i (1-indexed):
+      input_dim  = D_{i-1}  where D_0 = N and D_i = D_{i-1} * b / c
+      a_i * d_i  = D_{i-1} / c
+    Both a_i, d_i must be positive powers of 2 (or 1).
+    """
+    b_values = powers_of_2_range(2, 64)
+    c_values = powers_of_2_range(2, 64)
+    MN_values = [512, 1024, 2048, 4096]
+    K_values = [2, 3, 4, 5, 6, 7]
+
+    configs = []
+    for K in K_values:
+        for b, c in itertools.product(b_values, c_values):
+            for M, N in itertools.product(MN_values, MN_values):
+                if M * c ** K != N * b ** K:
+                    continue
+
+                # Validate every intermediate dimension and (a, d) feasibility
+                valid = True
+                for i in range(K):
+                    D_prev_num = N * b ** i
+                    D_prev_den = c ** i
+                    if D_prev_num % D_prev_den != 0:
+                        valid = False
+                        break
+                    D_prev = D_prev_num // D_prev_den
+                    if D_prev % c != 0:
+                        valid = False
+                        break
+                    ad = D_prev // c
+                    if ad < 1:
+                        valid = False
+                        break
+                    # Need at least one power-of-2 (a, d) pair
+                    has_pair = any(
+                        ad % a == 0 and is_power_of_2(ad // a)
+                        for a in powers_of_2_range(1, ad)
+                        if ad % a == 0
+                    )
+                    if not has_pair:
+                        valid = False
+                        break
+
+                if valid:
+                    configs.append((b, c, M, N, K))
+
+    return configs
+
+
+def _group3_build_stages(b, c, N, K):
+    """
+    Build K stages for a chain.  Returns list of (a, b, c, d) tuples.
+
+    For each stage, enumerates all valid (a, d) power-of-2 pairs.
+    Uses "decreasing a" ordering (a = ad_product >> i, d = 1 << i) when
+    possible, falling back to (a=ad, d=1).
+    """
+    stages = []  # list of (a, b, c, d, all_ad_pairs)
+    D = N
+    for i in range(K):
+        ad = D // c
+        # Enumerate all valid (a, d) pairs
+        ad_pairs = []
+        for a in powers_of_2_range(1, ad):
+            if ad % a != 0:
+                continue
+            d = ad // a
+            if is_power_of_2(d):
+                ad_pairs.append((a, d))
+        # Sort by decreasing a (= increasing d)
+        ad_pairs.sort(key=lambda x: -x[0])
+
+        # Pick canonical (a, d): butterfly-like, stage i picks the i-th pair
+        # from the decreasing-a list, wrapping if K > len(ad_pairs)
+        idx = i % len(ad_pairs)
+        a_canon, d_canon = ad_pairs[idx]
+
+        stages.append((a_canon, b, c, d_canon, ad_pairs))
+        D = D * b // c  # next intermediate dimension
+
+    return stages
+
+
+def _group3_worker(rank, configs, args, output_file):
+    """
+    configs: list of (b, c, M, N, K, batch_size) tuples.
+    """
+    dtype = torch.float16 if args.dtype == "float16" else torch.float32
+    device = "cuda"
+    layout = "BSF"
+    fieldnames = _group3_fieldnames(args)
+    rows = []
+    total = len(configs)
+
+    # Resume support
+    completed_keys = set()
+    if getattr(args, 'resume', False) and os.path.exists(output_file):
+        key_fields = ["b", "c", "M", "N", "K", "batch_size", "stage", "a", "d"]
+        rows, completed_keys, _ = _load_resume_state(
+            output_file, key_fields, error_field="stage_triton_ms",
+        )
+        print(f"  Resuming: {len(rows)} existing results")
+
+    for idx, (b, c, M, N, K, batch_size) in enumerate(configs, 1):
+        stages = _group3_build_stages(b, c, N, K)
+
+        print(f"[GPU {rank}] [{idx}/{total}] b={b} c={c} M={M} N={N} K={K} BS={batch_size}")
+
+        # ── Profile each stage individually ──────────────────────────
+        triton_stage_times = []
+        bmm_stage_times = []
+
+        for si, (a, _b, _c, d, ad_pairs) in enumerate(stages):
+            pattern = (a, _b, _c, d)
+            dim_in = a * _c * d
+            dim_out = a * _b * d
+
+            config_key = tuple(str(v) for v in (b, c, M, N, K, batch_size, si, a, d))
+            if config_key in completed_keys:
+                triton_stage_times.append(None)
+                bmm_stage_times.append(None)
+                continue
+
+            try:
+                x_stage = torch.randn(batch_size, dim_in, dtype=dtype, device=device)
+            except Exception as e:
+                print(f"    stage {si}: cannot allocate ({e})")
+                triton_stage_times.append(None)
+                bmm_stage_times.append(None)
+                continue
+
+            # Triton
+            triton_ms = None
+            if not args.cuda_only:
+                try:
+                    scaling = 1.0 / math.sqrt(_c)
+                    K_bmm = torch.empty(a * d, _c, _b, dtype=dtype, device=device).uniform_(
+                        -scaling, scaling)
+                    _ = triton_forward(x_stage, K_bmm, pattern, layout=layout)
+                    torch.cuda.synchronize()
+                    triton_ms = benchmark(
+                        triton_forward, (x_stage, K_bmm, pattern, layout),
+                        warmup=args.warmup, iters=args.iters)
+                    print(f"    stage {si} (a={a},d={d}) triton: {triton_ms:.4f} ms")
+                except Exception as e:
+                    short = str(e).split("\n")[0][:120]
+                    print(f"    stage {si} (a={a},d={d}) triton: SKIP ({short})")
+            triton_stage_times.append(triton_ms)
+
+            # BMM
+            bmm_ms = None
+            if not args.cuda_only:
+                try:
+                    scaling = 1.0 / math.sqrt(_c)
+                    w_kron = torch.empty(a * d, _b, _c, dtype=dtype, device=device).uniform_(
+                        -scaling, scaling)
+                    _ = bmm_forward(x_stage, w_kron, pattern, layout=layout)
+                    torch.cuda.synchronize()
+                    bmm_ms = benchmark(
+                        bmm_forward, (x_stage, w_kron, pattern, layout),
+                        warmup=args.warmup, iters=args.iters)
+                    print(f"    stage {si} (a={a},d={d}) bmm:    {bmm_ms:.4f} ms")
+                except Exception as e:
+                    short = str(e).split("\n")[0][:120]
+                    print(f"    stage {si} (a={a},d={d}) bmm:    SKIP ({short})")
+            bmm_stage_times.append(bmm_ms)
+
+        # ── Profile the full chain end-to-end ────────────────────────
+        # Build canonical chain kernels
+        triton_chain_kernels = []
+        bmm_chain_kernels = []
+        chain_buildable = True
+        for si, (a, _b, _c, d, _) in enumerate(stages):
+            pattern = (a, _b, _c, d)
+            try:
+                scaling = 1.0 / math.sqrt(_c)
+                K_bmm_k = torch.empty(a * d, _c, _b, dtype=dtype, device=device).uniform_(
+                    -scaling, scaling)
+                w_kron_k = torch.empty(a * d, _b, _c, dtype=dtype, device=device).uniform_(
+                    -scaling, scaling)
+                triton_chain_kernels.append((pattern, K_bmm_k))
+                bmm_chain_kernels.append((pattern, w_kron_k))
+            except Exception:
+                chain_buildable = False
+                break
+
+        triton_chain_ms = None
+        bmm_chain_ms = None
+
+        if chain_buildable and not args.cuda_only:
+            # Triton chain
+            def triton_chain_forward():
+                x = torch.randn(batch_size, N, dtype=dtype, device=device)
+                for pat, k_bmm in triton_chain_kernels:
+                    x = triton_forward(x, k_bmm, pat, layout=layout)
+                return x
+
+            try:
+                _ = triton_chain_forward()
+                torch.cuda.synchronize()
+                triton_chain_ms = benchmark(
+                    lambda: triton_chain_forward(), (),
+                    warmup=args.warmup, iters=args.iters)
+                print(f"    chain triton total: {triton_chain_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                print(f"    chain triton total: SKIP ({short})")
+
+            # BMM chain
+            def bmm_chain_forward():
+                x = torch.randn(batch_size, N, dtype=dtype, device=device)
+                for pat, w_k in bmm_chain_kernels:
+                    x = bmm_forward(x, w_k, pat, layout=layout)
+                return x
+
+            try:
+                _ = bmm_chain_forward()
+                torch.cuda.synchronize()
+                bmm_chain_ms = benchmark(
+                    lambda: bmm_chain_forward(), (),
+                    warmup=args.warmup, iters=args.iters)
+                print(f"    chain bmm total:    {bmm_chain_ms:.4f} ms")
+            except Exception as e:
+                short = str(e).split("\n")[0][:120]
+                print(f"    chain bmm total:    SKIP ({short})")
+
+        # ── Write one row per stage ──────────────────────────────────
+        for si, (a, _b, _c, d, _) in enumerate(stages):
+            dim_in = a * _c * d
+            dim_out = a * _b * d
+            triton_st = triton_stage_times[si]
+            bmm_st = bmm_stage_times[si]
+            row = dict(
+                group="group3", b=b, c=c, M=M, N=N, K=K,
+                batch_size=batch_size, stage=si,
+                a=a, d=d, dim_in=dim_in, dim_out=dim_out,
+                stage_triton_ms=f"{triton_st:.6f}" if triton_st is not None else "",
+                stage_bmm_ms=f"{bmm_st:.6f}" if bmm_st is not None else "",
+                total_chain_triton_ms=f"{triton_chain_ms:.6f}" if (triton_chain_ms is not None and si == 0) else "",
+                total_chain_bmm_ms=f"{bmm_chain_ms:.6f}" if (bmm_chain_ms is not None and si == 0) else "",
+            )
+            rows.append(row)
+
+    # Write CSV
+    os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
+    with open(output_file, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def run_group3(args):
+    """
+    K-factor chain profiling with general (b, c) decompositions.
+
+    For each valid (b, c, M, N, K), builds K stages where every factor
+    shares (b, c) and the chain satisfies M * c^K = N * b^K.
+    Profiles each stage individually (sweeping canonical a, d)
+    plus the full chain end-to-end.
+    """
+    bcmnk_configs = _group3_enumerate_configs()
+    batch_sizes = args.batch_sizes
+
+    # Flatten into (b, c, M, N, K, batch_size) configs
+    configs = [
+        (b, c, M, N, K, bs)
+        for (b, c, M, N, K) in bcmnk_configs
+        for bs in batch_sizes
+    ]
+
+    total = len(configs)
+    print(f"Group 3: {len(bcmnk_configs)} (b,c,M,N,K) combos x {len(batch_sizes)} batch sizes = {total} configs")
+    print(f"Warmup: {args.warmup}, Iterations: {args.iters}, dtype: {args.dtype}")
+    print()
+
+    fieldnames = _group3_fieldnames(args)
+
+    if args.num_gpus > 1:
+        run_parallel(_group3_worker, configs, args, fieldnames)
+        return
+
+    # Single-GPU path
+    _run_worker_with_restart(_group3_worker, configs, args, args.output)
+    print(f"\nResults saved to {args.output}")
+
+
 # ── CLI ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(
@@ -914,6 +1221,14 @@ def main():
                                help="Batch sizes to profile (default: powers of 2 from 2 to 4096)")
     add_common_args(group2_parser)
 
+    # ── group3 ───────────────────────────────────────────────────────────
+    group3_parser = subparsers.add_parser("group3",
+        help="K-factor chain profiling: general (b,c) decompositions")
+    group3_parser.add_argument("--batch_sizes", type=int, nargs="+",
+                               default=None,
+                               help="Batch sizes to profile (default: powers of 2 from 2 to 4096)")
+    add_common_args(group3_parser)
+
     args = parser.parse_args()
 
     if hasattr(args, 'cuda_only') and hasattr(args, 'triton_only'):
@@ -930,6 +1245,8 @@ def main():
         run_group1(args)
     elif args.command == "group2":
         run_group2(args)
+    elif args.command == "group3":
+        run_group3(args)
     else:
         parser.print_help()
         sys.exit(1)
